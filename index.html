@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>カメレオン・プロトタイプ</title>
+    <style>
+        /* 画面のズレ・ズームを徹底防止 */
+        html, body { 
+            height: 100%; 
+            overflow: hidden; 
+            margin: 0; 
+            padding: 10px; 
+            background: #f0f2f5; 
+            font-family: sans-serif; 
+            touch-action: none;
+        }
+        #box { 
+            background: #fff; 
+            padding: 15px; 
+            border-radius: 15px; 
+            text-align: center; 
+            margin-bottom: 10px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        #target { font-size: 20px; font-weight: bold; color: #333; }
+        #display { 
+            font-size: 28px; 
+            color: #007bff; 
+            min-height: 1.5em; 
+            font-weight: bold; 
+            background: #eee; 
+            border-radius: 8px; 
+            margin-top: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        
+        /* キーボードのレイアウト：画面下部に固定 */
+        .kb-container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px; 
+            height: 55%; 
+        }
+        .row { 
+            display: flex; 
+            justify-content: center; 
+            gap: 4px; 
+            flex: 1; 
+        }
+        
+        /* iOSで最も反応が良い標準ボタンを使用 */
+        button.key {
+            flex: 1;
+            background: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 3px 0 #adb5bd;
+            -webkit-appearance: none;
+            color: #000;
+        }
+        /* 押し心地の視覚効果 */
+        button.key:active { 
+            background: #007bff; 
+            color: white; 
+            transform: translateY(2px); 
+            box-shadow: none; 
+        }
+        
+        #save-area { display: none; text-align: center; margin-top: 20px; }
+        #save-btn { 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 20px; 
+            border-radius: 40px; 
+            font-size: 20px; 
+            width: 100%; 
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="box">
+    <div style="font-size:12px;color:#666;">お題：<span id="target">HELLO</span></div>
+    <div id="display"></div>
+</div>
+
+<div class="kb-container" id="kb-area">
+    <div class="row">
+        <button class="key" onclick="tap('Q')">Q</button><button class="key" onclick="tap('W')">W</button>
+        <button class="key" onclick="tap('E')">E</button><button class="key" onclick="tap('R')">R</button>
+        <button class="key" onclick="tap('T')">T</button><button class="key" onclick="tap('Y')">Y</button>
+        <button class="key" onclick="tap('U')">U</button><button class="key" onclick="tap('I')">I</button>
+        <button class="key" onclick="tap('O')">O</button><button class="key" onclick="tap('P')">P</button>
+    </div>
+    <div class="row">
+        <button class="key" onclick="tap('A')">A</button><button class="key" onclick="tap('S')">S</button>
+        <button class="key" onclick="tap('D')">D</button><button class="key" onclick="tap('F')">F</button>
+        <button class="key" onclick="tap('G')">G</button><button class="key" onclick="tap('H')">H</button>
+        <button class="key" onclick="tap('J')">J</button><button class="key" onclick="tap('K')">K</button>
+        <button class="key" onclick="tap('L')">L</button>
+    </div>
+    <div class="row">
+        <button class="key" onclick="tap('Z')">Z</button><button class="key" onclick="tap('X')">X</button>
+        <button class="key" onclick="tap('C')">C</button><button class="key" onclick="tap('V')">V</button>
+        <button class="key" onclick="tap('B')">B</button><button class="key" onclick="tap('N')">N</button>
+        <button class="key" onclick="tap('M')">M</button>
+    </div>
+</div>
+
+<div id="save-area">
+    <button id="save-btn" onclick="saveData()">結果(CSV)を保存する</button>
+</div>
+
+<script>
+    let log = "TargetWord,KeyPressed,TouchX,TouchY,Timestamp\n";
+    let words = ["HELLO", "KEYBOARD", "MIMIC", "AI", "SMART"];
+    let idx = 0;
+
+    function tap(k) {
+        // イベントからタッチ座標を取得
+        const e = window.event;
+        const x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+        const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+        
+        // ログ作成
+        log += words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "\n";
+        
+        const displayEl = document.getElementById('display');
+        displayEl.innerText += k;
+
+        // お題の長さ分打ったら次へ
+        if (displayEl.innerText.length >= words[idx].length) {
+            idx++;
+            if (idx < words.length) {
+                setTimeout(() => {
+                    document.getElementById('target').innerText = words[idx];
+                    displayEl.innerText = "";
+                }, 300);
+            } else {
+                // 終了
+                document.getElementById('kb-area').style.display = "none";
+                document.getElementById('save-area').style.display = "block";
+                displayEl.innerText = "TEST COMPLETE";
+            }
+        }
+    }
+
+    function saveData() {
+        const blob = new Blob([log], {type: 'text/csv'});
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "chameleon_data.csv";
+        a.click();
+    }
+</script>
+</body>
+</html>
