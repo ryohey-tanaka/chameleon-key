@@ -3,91 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>カメレオン・プロトタイプ</title>
+    <title>カメレオン・キーボード（シニア版）</title>
     <style>
-        /* 画面のズレ・ズームを徹底防止 */
-        html, body { 
-            height: 100%; 
-            overflow: hidden; 
-            margin: 0; 
-            padding: 10px; 
-            background: #f0f2f5; 
-            font-family: sans-serif; 
-            touch-action: none;
-        }
-        #box { 
-            background: #fff; 
-            padding: 15px; 
-            border-radius: 15px; 
-            text-align: center; 
-            margin-bottom: 10px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-        }
-        #target { font-size: 20px; font-weight: bold; color: #333; }
-        #display { 
-            font-size: 28px; 
-            color: #007bff; 
-            min-height: 1.5em; 
-            font-weight: bold; 
-            background: #eee; 
-            border-radius: 8px; 
-            margin-top: 10px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-        }
+        html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; touch-action: none; }
+        #box { background: #fff; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #target { font-size: 24px; font-weight: bold; color: #d9534f; } /* 文字を大きく、色をはっきり */
+        #display { font-size: 30px; color: #007bff; min-height: 1.5em; font-weight: bold; background: #eee; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; }
+        #progress { font-size: 14px; color: #666; margin-bottom: 5px; }
         
-        /* キーボードのレイアウト：画面下部に固定 */
-        .kb-container { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 5px; 
-            height: 55%; 
-        }
-        .row { 
-            display: flex; 
-            justify-content: center; 
-            gap: 4px; 
-            flex: 1; 
-        }
+        .kb-container { display: flex; flex-direction: column; gap: 5px; height: 50%; }
+        .row { display: flex; justify-content: center; gap: 4px; flex: 1; }
         
-        /* iOSで最も反応が良い標準ボタンを使用 */
         button.key {
             flex: 1;
             background: #ffffff;
             border: none;
-            border-radius: 6px;
-            font-size: 18px;
+            border-radius: 8px;
+            font-size: 22px; /* キーの文字も大きく */
             font-weight: bold;
-            box-shadow: 0 3px 0 #adb5bd;
+            box-shadow: 0 4px 0 #adb5bd;
             -webkit-appearance: none;
             color: #000;
         }
-        /* 押し心地の視覚効果 */
-        button.key:active { 
-            background: #007bff; 
-            color: white; 
-            transform: translateY(2px); 
-            box-shadow: none; 
-        }
+        button.key:active { background: #007bff; color: white; transform: translateY(2px); box-shadow: none; }
         
         #save-area { display: none; text-align: center; margin-top: 20px; }
-        #save-btn { 
-            background: #28a745; 
-            color: white; 
-            border: none; 
-            padding: 20px; 
-            border-radius: 40px; 
-            font-size: 20px; 
-            width: 100%; 
-            font-weight: bold;
-        }
+        #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 40px; font-size: 22px; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="box">
-    <div style="font-size:12px;color:#666;">お題：<span id="target">HELLO</span></div>
+    <div id="progress">第 1 / 10 問</div>
+    <div style="font-size:14px;color:#666;">下と同じ文字を打ってください：</div>
+    <div id="target">RINGO</div>
     <div id="display"></div>
 </div>
 
@@ -119,35 +68,34 @@
 </div>
 
 <script>
-    let log = "TargetWord,KeyPressed,TouchX,TouchY,Timestamp\n";
-    let words = ["HELLO", "KEYBOARD", "MIMIC", "AI", "SMART"];
+    let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp\n";
+    // シニアの方が親しみやすく、かつ全アルファベットを網羅しがちな10単語
+    let words = ["RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI"];
     let idx = 0;
 
     function tap(k) {
-        // イベントからタッチ座標を取得
         const e = window.event;
         const x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
         const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
         
-        // ログ作成
-        log += words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "\n";
+        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "\n";
         
         const displayEl = document.getElementById('display');
         displayEl.innerText += k;
 
-        // お題の長さ分打ったら次へ
         if (displayEl.innerText.length >= words[idx].length) {
             idx++;
             if (idx < words.length) {
                 setTimeout(() => {
+                    document.getElementById('progress').innerText = "第 " + (idx + 1) + " / " + words.length + " 問";
                     document.getElementById('target').innerText = words[idx];
                     displayEl.innerText = "";
                 }, 300);
             } else {
-                // 終了
                 document.getElementById('kb-area').style.display = "none";
                 document.getElementById('save-area').style.display = "block";
-                displayEl.innerText = "TEST COMPLETE";
+                document.getElementById('target').innerText = "お疲れ様でした！";
+                displayEl.innerText = "完了";
             }
         }
     }
@@ -157,7 +105,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "chameleon_data.csv";
+        a.download = "senior_typing_data.csv";
         a.click();
     }
 </script>
