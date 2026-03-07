@@ -68,30 +68,42 @@
 </div>
 
 <script>
-    let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted\n";
-    // シニアの方が親しみやすく、かつ全アルファベットを網羅しがちな10単語
+    let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
     let words = ["RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI"];
     let idx = 0;
 
+    // ★【左利きスイッチ】将来ここを true にするだけで反転するように設計
+    const isLeftHanded = false; 
+
     function tap(k) {
         const e = window.event;
-        // 元のタッチ位置を取得
         let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
         let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
         
         let adjusted = false;
+        let offset = 0;
 
-        // 【カメレオン機能：右側の判定スライド】
-        // 右側のキーを狙っているのに、手が届かず左側（600pxより左）を叩いてしまった場合
-        const rightSideKeys = ['I','O','P','J','K','L','N','M'];
-        if (rightSideKeys.includes(k) && x < 600) { 
-            // 判定を250px右にスライドさせて記録する
-            x += 250; 
+        // 【秘伝のタレ：キーごとの個別補正値】
+        // あなたの調査データに基づいた「理想のズレ」を定義
+        const correctionMap = {
+            'M': 450, 'N': 377, 'O': 337, 'I': 297, 'K': 293, 
+            'L': 300, 'U': 259, 'H': 212, 'Y': 206, 'G': 197, 
+            'T': 177, 'S': 90,  'A': 49,  'W': 43
+        };
+
+        if (correctionMap[k]) {
+            offset = correctionMap[k];
+            
+            // 左利きモードなら、補正の方向をマイナスにする（反転ロジック）
+            if (isLeftHanded) {
+                x -= offset;
+            } else {
+                x += offset;
+            }
             adjusted = true;
         }
 
-        // ログに「補正したかどうか(Adjusted)」も記録するように進化させました
-        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "," + (adjusted ? "YES" : "NO") + "\n";
+        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "," + (adjusted ? "YES" : "NO") + "," + (isLeftHanded ? "Left" : "Right") + "\n";
         
         const displayEl = document.getElementById('display');
         displayEl.innerText += k;
@@ -118,10 +130,11 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "chameleon_typing_test.csv"; // ファイル名も進化
+        a.download = "chameleon_V2_test.csv";
         a.click();
     }
 </script>
 </body>
 </html>
+
 
