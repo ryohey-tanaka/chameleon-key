@@ -85,25 +85,27 @@
 
         // 【秘伝のタレ：キーごとの個別補正値】
         // あなたの調査データに基づいた「理想のズレ」を定義
-        const correctionMap = {
-            'M': 450, 'N': 377, 'O': 337, 'I': 297, 'K': 293, 
-            'L': 300, 'U': 259, 'H': 212, 'Y': 206, 'G': 197, 
-            'T': 177, 'S': 90,  'A': 49,  'W': 43
+        const offsets = {
+            'M': 450, 'N': 377, 'O': 337, 'K': 293, 'I': 297, 
+            'L': 350, 'U': 259, 'H': 212, 'Y': 206, 'G': 197, 'T': 177,
+            'E': 85.7, 'R': 127.9  // ← 今夜の主役！EとRを追加しました
         };
 
-        if (correctionMap[k]) {
-            offset = correctionMap[k];
-            
-            // 左利きモードなら、補正の方向をマイナスにする（反転ロジック）
+        const isLeftHanded = false; // 左利きモード切り替えスイッチ
+
+        if (offsets[k]) {
+            let move = offsets[k];
+            // 左利きならマイナス、右利きならプラスに座標をずらす
             if (isLeftHanded) {
-                x -= offset;
+                x -= move;
             } else {
-                x += offset;
+                x += move;
             }
             adjusted = true;
         }
 
-        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "," + (adjusted ? "YES" : "NO") + "," + (isLeftHanded ? "Left" : "Right") + "\n";
+        const mode = isLeftHanded ? "Left" : "Right";
+        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "," + (adjusted ? "YES" : "NO") + "," + mode + "\n";
         
         const displayEl = document.getElementById('display');
         displayEl.innerText += k;
@@ -130,11 +132,9 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "chameleon_V2_test.csv";
+        a.download = "chameleon_typing_test.csv";
         a.click();
     }
 </script>
 </body>
 </html>
-
-
