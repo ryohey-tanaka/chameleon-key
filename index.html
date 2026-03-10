@@ -68,9 +68,26 @@
 </div>
 
 <script>
-    let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
-    let words = ["RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI"];
+   let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
+    
+    // --- ここから書き換え ---
+    const masterWords = [
+        "RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI",
+        "APPLE", "BANANA", "CHERRY", "DOG", "ELEPHANT", "FOX", "GRAPE", "HORSE", "ICE", "JACK",
+        "KING", "LEMON", "MOON", "NIGHT", "ORANGE", "PIANO", "QUEEN", "RIVER", "SUN", "TIGER"
+    ];
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array.slice(0, 15); // 30個から15個を抽出
+    }
+
+    let words = shuffle([...masterWords]);
     let idx = 0;
+    // --- ここまで ---
 
     // ★【左利きスイッチ】将来ここを true にするだけで反転するように設計
     const isLeftHanded = false; 
@@ -148,5 +165,6 @@
 </script>
 </body>
 </html>
+
 
 
