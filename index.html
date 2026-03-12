@@ -27,12 +27,26 @@
         }
         button.key:active { background: #007bff; color: white; transform: translateY(2px); box-shadow: none; }
         
-        #save-area { display: none; text-align: center; margin-top: 20px; }
+        #save-area { display: none; text-align: center; margin-top: 20px; }/* モード切り替えスイッチのスタイル */
+        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; }
+        .mode-btn { 
+            flex: 1; padding: 12px 5px; border: 2px solid #ccc; border-radius: 8px; 
+            background: #fff; font-weight: bold; font-size: 14px; color: #333;
+            box-shadow: 0 2px 0 #ccc;
+        }
+        .mode-btn.active { 
+            background: #007bff; color: white; border-color: #0056b3; 
+            box-shadow: 0 2px 0 #004085;
+        }
         #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 40px; font-size: 22px; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body>
-
+<div class="mode-selector">
+    <button id="btn-right" class="mode-btn active" onclick="setMode('Right')">右手</button>
+    <button id="btn-left" class="mode-btn" onclick="setMode('Left')">左手</button>
+    <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手/無補正</button>
+</div>
 <div id="box">
     <div id="progress">第 1 / 10 問</div>
     <div style="font-size:14px;color:#666;">下と同じ文字を打ってください：</div>
@@ -68,9 +82,19 @@
 </div>
 
 <script>
-   let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
-    
-    // --- ここから書き換え ---
+    let currentMode = 'Right'; // 初期値は右手モード
+    let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
+
+    // モード切り替え関数：ボタンを押すとここが動きます
+    function setMode(mode) {
+        currentMode = mode;
+        // ボタンの見た目（青色）を更新
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        if(mode === 'Right') document.getElementById('btn-right').classList.add('active');
+        if(mode === 'Left') document.getElementById('btn-left').classList.add('active');
+        if(mode === 'Both') document.getElementById('btn-both').classList.add('active');
+    }
+
     const masterWords = [
         "RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI",
         "APPLE", "BANANA", "CHERRY", "DOG", "ELEPHANT", "FOX", "GRAPE", "HORSE", "ICE", "JACK",
@@ -82,57 +106,43 @@
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
-        return array.slice(0, 15); // 30個から15個を抽出
+        return array.slice(0, 15);
     }
 
     let words = shuffle([...masterWords]);
     let idx = 0;
-    // --- ここまで ---
 
-    // ★【左利きスイッチ】将来ここを true にするだけで反転するように設計
-    const isLeftHanded = false; 
+    const offsets = {
+        'P': 480, 'O': 337, 'I': 297, 'U': 259, 'Y': 206,
+        'L': 350, 'K': 293, 'J': 240, 'H': 212,
+        'M': 450, 'N': 377,
+        'T': 177, 'G': 197, 'B': 180,
+        'R': 127, 'F': 140, 'V': 130,
+        'E': 85,  'D': 95,  'C': 90,
+        'W': 45,  'S': 55,  'X': 50,
+        'Q': 20,  'A': 30,  'Z': 25
+    };
 
     function tap(k) {
         const e = window.event;
         let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
         let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        
         let adjusted = false;
-        let offset = 0;
 
-        // 【秘伝のタレ：キーごとの個別補正値】
-        // あなたの調査データに基づいた「理想のズレ」を定義
-        const offsets = {
-    // 【右側：届かないエリア】（大きく右へ補正）
-    'P': 480, 'O': 337, 'I': 297, 'U': 259, 'Y': 206,
-    'L': 350, 'K': 293, 'J': 240, 'H': 212,
-    'M': 450, 'N': 377,
-
-    // 【中央：少しズレるエリア】（中くらいに右へ補正）
-    'T': 177, 'G': 197, 'B': 180,
-    'R': 127, 'F': 140, 'V': 130,
-
-    // 【左側：指を曲げにくいエリア】（小さく右へ補正）
-    'E': 85,  'D': 95,  'C': 90,
-    'W': 45,  'S': 55,  'X': 50,
-    'Q': 20,  'A': 30,  'Z': 25
-};
-
-        const isLeftHanded = true; // 左利きモード切り替えスイッチ
-
+        // 【カメレオン・ロジック】現在のモードに合わせて補正
         if (offsets[k]) {
-            let move = offsets[k];
-            // 左利きならマイナス、右利きならプラスに座標をずらす
-            if (isLeftHanded) {
-                x -= move;
-            } else {
-                x += move;
+            if (currentMode === 'Left') {
+                x -= offsets[k]; // 左手モード：左へ補正
+                adjusted = true;
+            } else if (currentMode === 'Right') {
+                x += offsets[k]; // 右手モード：右へ補正
+                adjusted = true;
             }
-            adjusted = true;
+            // 'Both'（両手/無補正）の時は座標をそのままにする
         }
 
-        const mode = isLeftHanded ? "Left" : "Right";
-        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "," + (adjusted ? "YES" : "NO") + "," + mode + "\n";
+        // CSVログに現在のモードを記録
+        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";
         
         const displayEl = document.getElementById('display');
         displayEl.innerText += k;
@@ -165,6 +175,7 @@
 </script>
 </body>
 </html>
+
 
 
 
