@@ -5,36 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>カメレオン・キーボード（汎用スマホ版）</title>
     <style>
-        /* 全デバイス共通：誤動作防止とタップ反応の向上 */
         * { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
         html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; }
-        
         #box { background: #fff; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         #target { font-size: 24px; font-weight: bold; color: #d9534f; }
         #display { font-size: 30px; color: #007bff; min-height: 1.5em; font-weight: bold; background: #eee; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; }
         #progress { font-size: 14px; color: #666; margin-bottom: 5px; }
-        
         .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; }
-        .mode-btn { 
-            flex: 1; padding: 12px 5px; border: 2px solid #ccc; border-radius: 8px; 
-            background: #fff; font-weight: bold; font-size: 14px; color: #333;
-            box-shadow: 0 2px 0 #ccc; -webkit-appearance: none;
-        }
-        .mode-btn.active { 
-            background: #007bff !important; color: white !important; 
-            border-color: #0056b3 !important; box-shadow: 0 2px 0 #004085 !important;
-        }
-        
+        .mode-btn { flex: 1; padding: 12px 5px; border: 2px solid #ccc; border-radius: 8px; background: #fff; font-weight: bold; font-size: 14px; color: #333; box-shadow: 0 2px 0 #ccc; -webkit-appearance: none; }
+        .mode-btn.active { background: #007bff !important; color: white !important; border-color: #0056b3 !important; box-shadow: 0 2px 0 #004085 !important; }
         .kb-container { display: flex; flex-direction: column; gap: 5px; height: 50%; }
         .row { display: flex; justify-content: center; gap: 4px; flex: 1; }
-        
-        button.key {
-            flex: 1; background: #ffffff; border: none; border-radius: 8px;
-            font-size: 22px; font-weight: bold; box-shadow: 0 4px 0 #adb5bd;
-            -webkit-appearance: none; color: #000;
-        }
+        button.key { flex: 1; background: #ffffff; border: none; border-radius: 8px; font-size: 22px; font-weight: bold; box-shadow: 0 4px 0 #adb5bd; -webkit-appearance: none; color: #000; }
         button.key:active { background: #007bff; color: white; transform: translateY(2px); box-shadow: none; }
-        
         #save-area { display: none; text-align: center; margin-top: 20px; }
         #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 40px; font-size: 22px; width: 100%; font-weight: bold; -webkit-appearance: none; }
     </style>
@@ -86,16 +69,8 @@
     let lastTapTime = 0;       
     let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
 
-    function setMode(mode) {
-        currentMode = mode;
-        const btns = document.querySelectorAll('.mode-btn');
-        btns.forEach(btn => btn.classList.remove('active'));
-        if(mode === 'Right') document.getElementById('btn-right').classList.add('active');
-        if(mode === 'Left') document.getElementById('btn-left').classList.add('active');
-        if(mode === 'Both') document.getElementById('btn-both').classList.add('active');
-    }
-
     const masterWords = ["RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI", "APPLE", "BANANA", "CHERRY", "DOG", "ELEPHANT", "FOX", "GRAPE", "HORSE", "ICE", "JACK", "KING", "LEMON", "MOON", "NIGHT", "ORANGE", "PIANO", "QUEEN", "RIVER", "SUN", "TIGER"];
+    
     function shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -103,6 +78,7 @@
         }
         return array.slice(0, 15);
     }
+    
     let words = shuffle([...masterWords]);
     let idx = 0;
 
@@ -113,30 +89,35 @@
 
     const offsets = {'P': 480, 'O': 337, 'I': 297, 'U': 259, 'Y': 206, 'L': 350, 'K': 293, 'J': 240, 'H': 212, 'M': 450, 'N': 377, 'T': 177, 'G': 197, 'B': 180, 'R': 127, 'F': 140, 'V': 130, 'E': 85, 'D': 95, 'C': 90, 'W': 45, 'S': 55, 'X': 50, 'Q': 20, 'A': 30, 'Z': 25};
 
-    function tap(e, k) {
-        // デフォルトの挙動（ズーム等）を阻止
-        if (e.cancelable) e.preventDefault();
+    function setMode(mode) {
+        currentMode = mode;
+        const btns = document.querySelectorAll('.mode-btn');
+        btns.forEach(btn => btn.classList.remove('active'));
+        if(mode === 'Right') document.getElementById('btn-right').classList.add('active');
+        if(mode === 'Left') document.getElementById('btn-left').classList.add('active');
+        if(mode === 'Both') document.getElementById('btn-both').classList.add('active');
+    }
 
+    function tap(e, k) {
+        if (e.cancelable) e.preventDefault();
         const now = Date.now();
         if (now - lastTapTime < 250) return; 
         lastTapTime = now;
 
-        // PointerEvents を使うことで Android/iPhone 共通で座標を取得
         let x = e.clientX;
         let y = e.clientY;
-
         let adjusted = false;
+
         if (offsets[k]) {
             if (currentMode === 'Left') { x -= offsets[k]; adjusted = true; }
             else if (currentMode === 'Right') { x += offsets[k]; adjusted = true; }
         }
 
-    log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";
+        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";
         
         const displayEl = document.getElementById('display');
         displayEl.innerText += k;
 
-        // 文字を打ち終わったかの判定
         if (displayEl.innerText.length >= words[idx].length) {
             idx++;
             if (idx < words.length) {
