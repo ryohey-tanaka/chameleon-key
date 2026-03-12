@@ -5,48 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>カメレオン・キーボード（シニア版）</title>
     <style>
-        html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; touch-action: none; }
+        /* touch-action: none を削除し、ボタンが反応するように修正 */
+        html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; }
+        
         #box { background: #fff; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #target { font-size: 24px; font-weight: bold; color: #d9534f; } /* 文字を大きく、色をはっきり */
+        #target { font-size: 24px; font-weight: bold; color: #d9534f; }
         #display { font-size: 30px; color: #007bff; min-height: 1.5em; font-weight: bold; background: #eee; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; }
         #progress { font-size: 14px; color: #666; margin-bottom: 5px; }
         
-        .kb-container { display: flex; flex-direction: column; gap: 5px; height: 50%; }
+        /* キーボード部分だけ誤動作（ズームなど）を防ぐ設定にする */
+        .kb-container { display: flex; flex-direction: column; gap: 5px; height: 50%; touch-action: manipulation; }
         .row { display: flex; justify-content: center; gap: 4px; flex: 1; }
         
         button.key {
-            flex: 1;
-            background: #ffffff;
-            border: none;
-            border-radius: 8px;
-            font-size: 22px; /* キーの文字も大きく */
-            font-weight: bold;
-            box-shadow: 0 4px 0 #adb5bd;
-            -webkit-appearance: none;
-            color: #000;
+            flex: 1; background: #ffffff; border: none; border-radius: 8px;
+            font-size: 22px; font-weight: bold; box-shadow: 0 4px 0 #adb5bd;
+            -webkit-appearance: none; color: #000;
+            touch-action: none; /* キー単体はズームを防ぐ */
         }
         button.key:active { background: #007bff; color: white; transform: translateY(2px); box-shadow: none; }
         
-        #save-area { display: none; text-align: center; margin-top: 20px; }/* モード切り替えスイッチのスタイル */
         .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; }
         .mode-btn { 
             flex: 1; padding: 12px 5px; border: 2px solid #ccc; border-radius: 8px; 
             background: #fff; font-weight: bold; font-size: 14px; color: #333;
             box-shadow: 0 2px 0 #ccc;
+            -webkit-appearance: none;
         }
         .mode-btn.active { 
             background: #007bff; color: white; border-color: #0056b3; 
             box-shadow: 0 2px 0 #004085;
         }
-        #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 40px; font-size: 22px; width: 100%; font-weight: bold; }
+        
+        #save-area { display: none; text-align: center; margin-top: 20px; }
+        #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 40px; font-size: 22px; width: 100%; font-weight: bold; -webkit-appearance: none; }
     </style>
 </head>
 <body>
+
 <div class="mode-selector">
     <button id="btn-right" class="mode-btn active" onclick="setMode('Right')">右手</button>
     <button id="btn-left" class="mode-btn" onclick="setMode('Left')">左手</button>
     <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手/無補正</button>
 </div>
+
 <div id="box">
     <div id="progress">準備中...</div>
     <div style="font-size:14px;color:#666;">下と同じ文字を打ってください：</div>
@@ -78,12 +80,14 @@
 </div>
 
 <div id="save-area">
-    <button id="save-btn" onclilet currentMode = 'Right'; // 初期値は右手モード
-    let lastTapTime = 0;       // 【追加】二重入力防止用のタイマー
+    <button id="save-btn" onclick="saveData()">結果(CSV)を保存する</button>
+</div>
 
+<script>
+    let currentMode = 'Right'; 
+    let lastTapTime = 0;       
     let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
 
-    // モード切り替え関数
     function setMode(mode) {
         currentMode = mode;
         document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
@@ -109,6 +113,11 @@
     let words = shuffle([...masterWords]);
     let idx = 0;
 
+    window.onload = () => {
+        document.getElementById('progress').innerText = "第 1 / " + words.length + " 問";
+        document.getElementById('target').innerText = words[idx];
+    };
+
     const offsets = {
         'P': 480, 'O': 337, 'I': 297, 'U': 259, 'Y': 206,
         'L': 350, 'K': 293, 'J': 240, 'H': 212,
@@ -121,33 +130,38 @@
     };
 
     function tap(k) {
-        // --- 【追加】二重入力防止ロジック ---
         const now = Date.now();
-        if (now - lastTapTime < 250) return; // 0.25秒以内の連続タップは無視
+        // iPhone向けにガード時間を少し調整（200ms）
+        if (now - lastTapTime < 200) return; 
         lastTapTime = now;
-        // ----------------------------------
 
-        const e = window.event;
-        let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-        let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+        // イベントオブジェクトを取得
+        const e = window.event || arguments.callee.caller.arguments[0];
+        let x = 0;
+        let y = 0;
+
+        // タッチ座標の取得をiPhoneに最適化
+        if (e.touches && e.touches[0]) {
+            x = e.touches[0].clientX;
+            y = e.touches[0].clientY;
+        } else {
+            x = e.clientX;
+            y = e.clientY;
+        }
+
         let adjusted = false;
 
-        // モードに応じた計算
         if (offsets[k]) {
             if (currentMode === 'Left') {
-                x -= offsets[k]; // 左手ならマイナス
+                x -= offsets[k];
                 adjusted = true;
             } else if (currentMode === 'Right') {
-                x += offsets[k]; // 右手ならプラス
+                x += offsets[k];
                 adjusted = true;
             }
         }
 
-        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";ck="saveData()">結果(CSV)を保存する</button>
-</div>
-
-<script>
-
+        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";
         
         const displayEl = document.getElementById('display');
         displayEl.innerText += k;
@@ -180,11 +194,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
