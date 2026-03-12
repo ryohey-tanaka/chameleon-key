@@ -48,7 +48,7 @@
     <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手/無補正</button>
 </div>
 <div id="box">
-    <div id="progress">第 1 / 10 問</div>
+    <div id="progress">準備中...</div>
     <div style="font-size:14px;color:#666;">下と同じ文字を打ってください：</div>
     <div id="target">RINGO</div>
     <div id="display"></div>
@@ -78,17 +78,14 @@
 </div>
 
 <div id="save-area">
-    <button id="save-btn" onclick="saveData()">結果(CSV)を保存する</button>
-</div>
+    <button id="save-btn" onclilet currentMode = 'Right'; // 初期値は右手モード
+    let lastTapTime = 0;       // 【追加】二重入力防止用のタイマー
 
-<script>
-    let currentMode = 'Right'; // 初期値は右手モード
     let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
 
-    // モード切り替え関数：ボタンを押すとここが動きます
+    // モード切り替え関数
     function setMode(mode) {
         currentMode = mode;
-        // ボタンの見た目（青色）を更新
         document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
         if(mode === 'Right') document.getElementById('btn-right').classList.add('active');
         if(mode === 'Left') document.getElementById('btn-left').classList.add('active');
@@ -124,25 +121,33 @@
     };
 
     function tap(k) {
+        // --- 【追加】二重入力防止ロジック ---
+        const now = Date.now();
+        if (now - lastTapTime < 250) return; // 0.25秒以内の連続タップは無視
+        lastTapTime = now;
+        // ----------------------------------
+
         const e = window.event;
         let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
         let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
         let adjusted = false;
 
-        // 【カメレオン・ロジック】現在のモードに合わせて補正
+        // モードに応じた計算
         if (offsets[k]) {
             if (currentMode === 'Left') {
-                x -= offsets[k]; // 左手モード：左へ補正
+                x -= offsets[k]; // 左手ならマイナス
                 adjusted = true;
             } else if (currentMode === 'Right') {
-                x += offsets[k]; // 右手モード：右へ補正
+                x += offsets[k]; // 右手ならプラス
                 adjusted = true;
             }
-            // 'Both'（両手/無補正）の時は座標をそのままにする
         }
 
-        // CSVログに現在のモードを記録
-        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";
+        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";ck="saveData()">結果(CSV)を保存する</button>
+</div>
+
+<script>
+
         
         const displayEl = document.getElementById('display');
         displayEl.innerText += k;
@@ -175,6 +180,10 @@
 </script>
 </body>
 </html>
+
+
+
+
 
 
 
