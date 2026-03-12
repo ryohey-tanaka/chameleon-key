@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>カメレオン・キーボード（シニア版）</title>
+    <title>カメレオン・キーボード（汎用スマホ版）</title>
     <style>
-        /* touch-action: none を削除し、ボタンが反応するように修正 */
+        /* 全デバイス共通：誤動作防止とタップ反応の向上 */
+        * { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
         html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; }
         
         #box { background: #fff; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -13,29 +14,26 @@
         #display { font-size: 30px; color: #007bff; min-height: 1.5em; font-weight: bold; background: #eee; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; }
         #progress { font-size: 14px; color: #666; margin-bottom: 5px; }
         
-        /* キーボード部分だけ誤動作（ズームなど）を防ぐ設定にする */
-        .kb-container { display: flex; flex-direction: column; gap: 5px; height: 50%; touch-action: manipulation; }
+        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; }
+        .mode-btn { 
+            flex: 1; padding: 12px 5px; border: 2px solid #ccc; border-radius: 8px; 
+            background: #fff; font-weight: bold; font-size: 14px; color: #333;
+            box-shadow: 0 2px 0 #ccc; -webkit-appearance: none;
+        }
+        .mode-btn.active { 
+            background: #007bff !important; color: white !important; 
+            border-color: #0056b3 !important; box-shadow: 0 2px 0 #004085 !important;
+        }
+        
+        .kb-container { display: flex; flex-direction: column; gap: 5px; height: 50%; }
         .row { display: flex; justify-content: center; gap: 4px; flex: 1; }
         
         button.key {
             flex: 1; background: #ffffff; border: none; border-radius: 8px;
             font-size: 22px; font-weight: bold; box-shadow: 0 4px 0 #adb5bd;
             -webkit-appearance: none; color: #000;
-            touch-action: none; /* キー単体はズームを防ぐ */
         }
         button.key:active { background: #007bff; color: white; transform: translateY(2px); box-shadow: none; }
-        
-        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; }
-        .mode-btn { 
-            flex: 1; padding: 12px 5px; border: 2px solid #ccc; border-radius: 8px; 
-            background: #fff; font-weight: bold; font-size: 14px; color: #333;
-            box-shadow: 0 2px 0 #ccc;
-            -webkit-appearance: none;
-        }
-        .mode-btn.active { 
-            background: #007bff; color: white; border-color: #0056b3; 
-            box-shadow: 0 2px 0 #004085;
-        }
         
         #save-area { display: none; text-align: center; margin-top: 20px; }
         #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 40px; font-size: 22px; width: 100%; font-weight: bold; -webkit-appearance: none; }
@@ -44,9 +42,9 @@
 <body>
 
 <div class="mode-selector">
-    <button id="btn-right" class="mode-btn active" onclick="setMode('Right')">右手</button>
-    <button id="btn-left" class="mode-btn" onclick="setMode('Left')">左手</button>
-    <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手/無補正</button>
+    <button id="btn-right" class="mode-btn active" onpointerdown="setMode('Right')">右手</button>
+    <button id="btn-left" class="mode-btn" onpointerdown="setMode('Left')">左手</button>
+    <button id="btn-both" class="mode-btn" onpointerdown="setMode('Both')">両手/無補正</button>
 </div>
 
 <div id="box">
@@ -58,29 +56,29 @@
 
 <div class="kb-container" id="kb-area">
     <div class="row">
-        <button class="key" onclick="tap('Q')">Q</button><button class="key" onclick="tap('W')">W</button>
-        <button class="key" onclick="tap('E')">E</button><button class="key" onclick="tap('R')">R</button>
-        <button class="key" onclick="tap('T')">T</button><button class="key" onclick="tap('Y')">Y</button>
-        <button class="key" onclick="tap('U')">U</button><button class="key" onclick="tap('I')">I</button>
-        <button class="key" onclick="tap('O')">O</button><button class="key" onclick="tap('P')">P</button>
+        <button class="key" onpointerdown="tap(event, 'Q')">Q</button><button class="key" onpointerdown="tap(event, 'W')">W</button>
+        <button class="key" onpointerdown="tap(event, 'E')">E</button><button class="key" onpointerdown="tap(event, 'R')">R</button>
+        <button class="key" onpointerdown="tap(event, 'T')">T</button><button class="key" onpointerdown="tap(event, 'Y')">Y</button>
+        <button class="key" onpointerdown="tap(event, 'U')">U</button><button class="key" onpointerdown="tap(event, 'I')">I</button>
+        <button class="key" onpointerdown="tap(event, 'O')">O</button><button class="key" onpointerdown="tap(event, 'P')">P</button>
     </div>
     <div class="row">
-        <button class="key" onclick="tap('A')">A</button><button class="key" onclick="tap('S')">S</button>
-        <button class="key" onclick="tap('D')">D</button><button class="key" onclick="tap('F')">F</button>
-        <button class="key" onclick="tap('G')">G</button><button class="key" onclick="tap('H')">H</button>
-        <button class="key" onclick="tap('J')">J</button><button class="key" onclick="tap('K')">K</button>
-        <button class="key" onclick="tap('L')">L</button>
+        <button class="key" onpointerdown="tap(event, 'A')">A</button><button class="key" onpointerdown="tap(event, 'S')">S</button>
+        <button class="key" onpointerdown="tap(event, 'D')">D</button><button class="key" onpointerdown="tap(event, 'F')">F</button>
+        <button class="key" onpointerdown="tap(event, 'G')">G</button><button class="key" onpointerdown="tap(event, 'H')">H</button>
+        <button class="key" onpointerdown="tap(event, 'J')">J</button><button class="key" onpointerdown="tap(event, 'K')">K</button>
+        <button class="key" onpointerdown="tap(event, 'L')">L</button>
     </div>
     <div class="row">
-        <button class="key" onclick="tap('Z')">Z</button><button class="key" onclick="tap('X')">X</button>
-        <button class="key" onclick="tap('C')">C</button><button class="key" onclick="tap('V')">V</button>
-        <button class="key" onclick="tap('B')">B</button><button class="key" onclick="tap('N')">N</button>
-        <button class="key" onclick="tap('M')">M</button>
+        <button class="key" onpointerdown="tap(event, 'Z')">Z</button><button class="key" onpointerdown="tap(event, 'X')">X</button>
+        <button class="key" onpointerdown="tap(event, 'C')">C</button><button class="key" onpointerdown="tap(event, 'V')">V</button>
+        <button class="key" onpointerdown="tap(event, 'B')">B</button><button class="key" onpointerdown="tap(event, 'N')">N</button>
+        <button class="key" onpointerdown="tap(event, 'M')">M</button>
     </div>
 </div>
 
 <div id="save-area">
-    <button id="save-btn" onclick="saveData()">結果(CSV)を保存する</button>
+    <button id="save-btn" onpointerdown="saveData()">結果(CSV)を保存する</button>
 </div>
 
 <script>
@@ -90,18 +88,14 @@
 
     function setMode(mode) {
         currentMode = mode;
-        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        const btns = document.querySelectorAll('.mode-btn');
+        btns.forEach(btn => btn.classList.remove('active'));
         if(mode === 'Right') document.getElementById('btn-right').classList.add('active');
         if(mode === 'Left') document.getElementById('btn-left').classList.add('active');
         if(mode === 'Both') document.getElementById('btn-both').classList.add('active');
     }
 
-    const masterWords = [
-        "RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI",
-        "APPLE", "BANANA", "CHERRY", "DOG", "ELEPHANT", "FOX", "GRAPE", "HORSE", "ICE", "JACK",
-        "KING", "LEMON", "MOON", "NIGHT", "ORANGE", "PIANO", "QUEEN", "RIVER", "SUN", "TIGER"
-    ];
-
+    const masterWords = ["RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI", "APPLE", "BANANA", "CHERRY", "DOG", "ELEPHANT", "FOX", "GRAPE", "HORSE", "ICE", "JACK", "KING", "LEMON", "MOON", "NIGHT", "ORANGE", "PIANO", "QUEEN", "RIVER", "SUN", "TIGER"];
     function shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -109,7 +103,6 @@
         }
         return array.slice(0, 15);
     }
-
     let words = shuffle([...masterWords]);
     let idx = 0;
 
@@ -118,79 +111,24 @@
         document.getElementById('target').innerText = words[idx];
     };
 
-    const offsets = {
-        'P': 480, 'O': 337, 'I': 297, 'U': 259, 'Y': 206,
-        'L': 350, 'K': 293, 'J': 240, 'H': 212,
-        'M': 450, 'N': 377,
-        'T': 177, 'G': 197, 'B': 180,
-        'R': 127, 'F': 140, 'V': 130,
-        'E': 85,  'D': 95,  'C': 90,
-        'W': 45,  'S': 55,  'X': 50,
-        'Q': 20,  'A': 30,  'Z': 25
-    };
+    const offsets = {'P': 480, 'O': 337, 'I': 297, 'U': 259, 'Y': 206, 'L': 350, 'K': 293, 'J': 240, 'H': 212, 'M': 450, 'N': 377, 'T': 177, 'G': 197, 'B': 180, 'R': 127, 'F': 140, 'V': 130, 'E': 85, 'D': 95, 'C': 90, 'W': 45, 'S': 55, 'X': 50, 'Q': 20, 'A': 30, 'Z': 25};
 
-    function tap(k) {
+    function tap(e, k) {
+        // デフォルトの挙動（ズーム等）を阻止
+        if (e.cancelable) e.preventDefault();
+
         const now = Date.now();
-        // iPhone向けにガード時間を少し調整（200ms）
-        if (now - lastTapTime < 200) return; 
+        if (now - lastTapTime < 250) return; 
         lastTapTime = now;
 
-        // イベントオブジェクトを取得
-        const e = window.event || arguments.callee.caller.arguments[0];
-        let x = 0;
-        let y = 0;
-
-        // タッチ座標の取得をiPhoneに最適化
-        if (e.touches && e.touches[0]) {
-            x = e.touches[0].clientX;
-            y = e.touches[0].clientY;
-        } else {
-            x = e.clientX;
-            y = e.clientY;
-        }
+        // PointerEvents を使うことで Android/iPhone 共通で座標を取得
+        let x = e.clientX;
+        let y = e.clientY;
 
         let adjusted = false;
-
         if (offsets[k]) {
-            if (currentMode === 'Left') {
-                x -= offsets[k];
-                adjusted = true;
-            } else if (currentMode === 'Right') {
-                x += offsets[k];
-                adjusted = true;
-            }
+            if (currentMode === 'Left') { x -= offsets[k]; adjusted = true; }
+            else if (currentMode === 'Right') { x += offsets[k]; adjusted = true; }
         }
 
-        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";
-        
-        const displayEl = document.getElementById('display');
-        displayEl.innerText += k;
-
-        if (displayEl.innerText.length >= words[idx].length) {
-            idx++;
-            if (idx < words.length) {
-                setTimeout(() => {
-                    document.getElementById('progress').innerText = "第 " + (idx + 1) + " / " + words.length + " 問";
-                    document.getElementById('target').innerText = words[idx];
-                    displayEl.innerText = "";
-                }, 300);
-            } else {
-                document.getElementById('kb-area').style.display = "none";
-                document.getElementById('save-area').style.display = "block";
-                document.getElementById('target').innerText = "お疲れ様でした！";
-                displayEl.innerText = "完了";
-            }
-        }
-    }
-
-    function saveData() {
-        const blob = new Blob([log], {type: 'text/csv'});
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "chameleon_typing_test.csv";
-        a.click();
-    }
-</script>
-</body>
-</html>
+        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES"
