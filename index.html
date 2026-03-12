@@ -131,4 +131,37 @@
             else if (currentMode === 'Right') { x += offsets[k]; adjusted = true; }
         }
 
-        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES"
+    log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + now + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";
+        
+        const displayEl = document.getElementById('display');
+        displayEl.innerText += k;
+
+        // 文字を打ち終わったかの判定
+        if (displayEl.innerText.length >= words[idx].length) {
+            idx++;
+            if (idx < words.length) {
+                setTimeout(() => {
+                    document.getElementById('progress').innerText = "第 " + (idx + 1) + " / " + words.length + " 問";
+                    document.getElementById('target').innerText = words[idx];
+                    displayEl.innerText = "";
+                }, 300);
+            } else {
+                document.getElementById('kb-area').style.display = "none";
+                document.getElementById('save-area').style.display = "block";
+                document.getElementById('target').innerText = "お疲れ様でした！";
+                displayEl.innerText = "完了";
+            }
+        }
+    }
+
+    function saveData() {
+        const blob = new Blob([log], {type: 'text/csv'});
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "chameleon_typing_test.csv";
+        a.click();
+    }
+</script>
+</body>
+</html>
