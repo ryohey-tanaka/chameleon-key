@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>カメレオン・キーボード（3モード完成版）</title>
+    <title>カメレオン・キーボード V2.0（全方位サポート版）</title>
     <style>
         html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; touch-action: none; }
         #box { background: #fff; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -41,7 +41,7 @@
 <div class="mode-selector">
     <button id="btn-right" class="mode-btn active" onclick="setMode('Right')">右手</button>
     <button id="btn-left" class="mode-btn" onclick="setMode('Left')">左手</button>
-    <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手(補正あり)</button>
+    <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手(全方位補正)</button>
 </div>
 
 <div id="box">
@@ -114,21 +114,21 @@
         document.getElementById('target').innerText = words[0];
     };
 
-    // キーごとの補正値（中央に近いほど小さく設定）
+    // 【改良ポイント】全キーに「あそび（補正値）」を設定。
+    // 中央でも最低20pxのゆとりを持たせ、端ほど大きく広げる
     const offsets = {
-        'Q': 150, 'A': 150, 'Z': 150, // 左端
-        'W': 100, 'S': 100, 'X': 100,
-        'E': 60,  'D': 60,  'C': 60,
-        'R': 30,  'F': 30,  'V': 30,
-        'T': 0,   'G': 0,   'B': 0,  // 中央付近
-        'Y': 0,   'H': 0,   'N': 0,  // 中央付近
-        'U': 30,  'J': 30,  'M': 30,
-        'I': 60,  'K': 60,
-        'O': 100, 'L': 100,
-        'P': 150                      // 右端
+        'Q': 150, 'A': 150, 'Z': 150,
+        'W': 110, 'S': 110, 'X': 110,
+        'E': 80,  'D': 80,  'C': 80,
+        'R': 50,  'F': 50,  'V': 50,
+        'T': 25,  'G': 25,  'B': 25, 
+        'Y': 25,  'H': 25,  'N': 25, 
+        'U': 50,  'J': 50,  'M': 50,
+        'I': 80,  'K': 80,
+        'O': 110, 'L': 110,
+        'P': 150
     };
 
-    // キーが「左側」か「右側」かを判定するリスト
     const leftSideKeys = ['Q','W','E','R','T','A','S','D','F','G','Z','X','C','V','B'];
 
     function tap(k) {
@@ -145,20 +145,19 @@
 
         if (offsets[k] !== undefined) {
             if (currentMode === 'Left') {
-                x -= offsets[k] * 2.5; // 片手モードは今まで通り強く補正
+                x -= (offsets[k] * 2); 
                 adjusted = true;
             } else if (currentMode === 'Right') {
-                x += offsets[k] * 2.5;
+                x += (offsets[k] * 2);
                 adjusted = true;
             } else if (currentMode === 'Both') {
-                // 【進化ポイント：両手モード】
-                // キーの位置に合わせて「外側」へ広げる
+                // 両手モード：中央キーも含め、必ず外側へ補正をかける
                 if (leftSideKeys.includes(k)) {
-                    x -= offsets[k]; // 左側のキーならさらに左へ
+                    x -= offsets[k]; 
                 } else {
-                    x += offsets[k]; // 右側のキーならさらに右へ
+                    x += offsets[k];
                 }
-                adjusted = (offsets[k] > 0);
+                adjusted = true; // offsets[k]が25以上なので常にYESになる
             }
         }
 
@@ -178,8 +177,8 @@
             } else {
                 document.getElementById('kb-area').style.display = "none";
                 document.getElementById('save-area').style.display = "block";
-                document.getElementById('target').innerText = "お疲れ様でした！";
-                displayEl.innerText = "完了";
+                document.getElementById('target').innerText = "V2.0 テスト完了！";
+                displayEl.innerText = "お疲れ様でした";
             }
         }
     }
@@ -189,7 +188,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "chameleon_typing_test_complete.csv";
+        a.download = "chameleon_V2_test.csv";
         a.click();
     }
 </script>
