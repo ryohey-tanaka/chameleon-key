@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>カメレオン・キーボード（シニア版）</title>
+    <title>カメレオン・キーボード（3モード完成版）</title>
     <style>
         html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; touch-action: none; }
         #box { background: #fff; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -11,7 +11,6 @@
         #display { font-size: 30px; color: #007bff; min-height: 1.5em; font-weight: bold; background: #eee; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; }
         #progress { font-size: 14px; color: #666; margin-bottom: 5px; }
         
-        /* モード切り替えスイッチのスタイル */
         .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; }
         .mode-btn { 
             flex: 1; padding: 12px 5px; border: 2px solid #ccc; border-radius: 8px; 
@@ -42,7 +41,7 @@
 <div class="mode-selector">
     <button id="btn-right" class="mode-btn active" onclick="setMode('Right')">右手</button>
     <button id="btn-left" class="mode-btn" onclick="setMode('Left')">左手</button>
-    <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手/無補正</button>
+    <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手(補正あり)</button>
 </div>
 
 <div id="box">
@@ -110,26 +109,30 @@
     let words = shuffle([...masterWords]);
     let idx = 0;
 
-    // 初回の表示設定
     window.onload = () => {
         document.getElementById('progress').innerText = "第 1 / " + words.length + " 問";
         document.getElementById('target').innerText = words[0];
     };
 
+    // キーごとの補正値（中央に近いほど小さく設定）
     const offsets = {
-        'P': 480, 'O': 337, 'I': 297, 'U': 259, 'Y': 206,
-        'L': 350, 'K': 293, 'J': 240, 'H': 212,
-        'M': 450, 'N': 377,
-        'T': 177, 'G': 197, 'B': 180,
-        'R': 127, 'F': 140, 'V': 130,
-        'E': 85,  'D': 95,  'C': 90,
-        'W': 45,  'S': 55,  'X': 50,
-        'Q': 20,  'A': 30,  'Z': 25
+        'Q': 150, 'A': 150, 'Z': 150, // 左端
+        'W': 100, 'S': 100, 'X': 100,
+        'E': 60,  'D': 60,  'C': 60,
+        'R': 30,  'F': 30,  'V': 30,
+        'T': 0,   'G': 0,   'B': 0,  // 中央付近
+        'Y': 0,   'H': 0,   'N': 0,  // 中央付近
+        'U': 30,  'J': 30,  'M': 30,
+        'I': 60,  'K': 60,
+        'O': 100, 'L': 100,
+        'P': 150                      // 右端
     };
+
+    // キーが「左側」か「右側」かを判定するリスト
+    const leftSideKeys = ['Q','W','E','R','T','A','S','D','F','G','Z','X','C','V','B'];
 
     function tap(k) {
         const now = Date.now();
-        // 同じキーの連打ガード（0.1秒未満の誤作動のみ防止）
         if (k === lastKey && (now - lastTapTime < 100)) return;
         
         lastTapTime = now;
@@ -140,13 +143,22 @@
         let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
         let adjusted = false;
 
-        if (offsets[k]) {
+        if (offsets[k] !== undefined) {
             if (currentMode === 'Left') {
-                x -= offsets[k];
+                x -= offsets[k] * 2.5; // 片手モードは今まで通り強く補正
                 adjusted = true;
             } else if (currentMode === 'Right') {
-                x += offsets[k];
+                x += offsets[k] * 2.5;
                 adjusted = true;
+            } else if (currentMode === 'Both') {
+                // 【進化ポイント：両手モード】
+                // キーの位置に合わせて「外側」へ広げる
+                if (leftSideKeys.includes(k)) {
+                    x -= offsets[k]; // 左側のキーならさらに左へ
+                } else {
+                    x += offsets[k]; // 右側のキーならさらに右へ
+                }
+                adjusted = (offsets[k] > 0);
             }
         }
 
@@ -177,7 +189,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "chameleon_typing_test.csv";
+        a.download = "chameleon_typing_test_complete.csv";
         a.click();
     }
 </script>
