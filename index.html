@@ -3,50 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>カメレオン・キーボード V2.0（全方位サポート版）</title>
+    <title>カメレオン・キーボード：大規模調査エディション</title>
     <style>
-        html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; touch-action: none; }
-        #box { background: #fff; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #target { font-size: 24px; font-weight: bold; color: #d9534f; }
-        #display { font-size: 30px; color: #007bff; min-height: 1.5em; font-weight: bold; background: #eee; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; }
-        #progress { font-size: 14px; color: #666; margin-bottom: 5px; }
+        html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f8f9fa; font-family: sans-serif; touch-action: none; }
+        #box { background: #fff; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #dee2e6; }
+        #target { font-size: 28px; font-weight: bold; color: #333; letter-spacing: 2px; }
+        #display { font-size: 30px; color: #007bff; min-height: 1.5em; font-weight: bold; background: #e9ecef; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; }
+        #status-bar { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; font-weight: bold; }
+        .mode-normal { color: #6c757d; }
+        .mode-chameleon { color: #28a745; text-shadow: 0 0 5px rgba(40,167,69,0.2); }
         
-        .mode-selector { display: flex; gap: 5px; margin-bottom: 10px; }
-        .mode-btn { 
-            flex: 1; padding: 12px 5px; border: 2px solid #ccc; border-radius: 8px; 
-            background: #fff; font-weight: bold; font-size: 14px; color: #333;
-            box-shadow: 0 2px 0 #ccc;
-        }
-        .mode-btn.active { 
-            background: #007bff; color: white; border-color: #0056b3; 
-            box-shadow: 0 2px 0 #004085;
-        }
-
-        .kb-container { display: flex; flex-direction: column; gap: 5px; height: 50%; }
+        .kb-container { display: flex; flex-direction: column; gap: 6px; height: 50%; }
         .row { display: flex; justify-content: center; gap: 4px; flex: 1; }
-        
         button.key {
             flex: 1; background: #ffffff; border: none; border-radius: 8px;
-            font-size: 22px; font-weight: bold; box-shadow: 0 4px 0 #adb5bd;
-            -webkit-appearance: none; color: #000;
+            font-size: 24px; font-weight: bold; box-shadow: 0 4px 0 #adb5bd;
+            -webkit-appearance: none; color: #212529;
         }
         button.key:active { background: #007bff; color: white; transform: translateY(2px); box-shadow: none; }
         
-        #save-area { display: none; text-align: center; margin-top: 20px; }
-        #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 40px; font-size: 22px; width: 100%; font-weight: bold; }
+        #final-area { display: none; text-align: center; padding: 20px; }
+        #save-btn { background: #007bff; color: white; border: none; padding: 20px; border-radius: 40px; font-size: 22px; width: 100%; font-weight: bold; box-shadow: 0 4px 15px rgba(0,123,255,0.4); }
     </style>
 </head>
 <body>
 
-<div class="mode-selector">
-    <button id="btn-right" class="mode-btn active" onclick="setMode('Right')">右手</button>
-    <button id="btn-left" class="mode-btn" onclick="setMode('Left')">左手</button>
-    <button id="btn-both" class="mode-btn" onclick="setMode('Both')">両手(全方位補正)</button>
+<div id="status-bar">
+    <div id="progress">準備中...</div>
+    <div id="mode-display">モード：判定中</div>
 </div>
 
 <div id="box">
-    <div id="progress">読み込み中...</div>
-    <div style="font-size:14px;color:#666;">下と同じ文字を打ってください：</div>
     <div id="target">----</div>
     <div id="display"></div>
 </div>
@@ -74,111 +61,80 @@
     </div>
 </div>
 
-<div id="save-area">
-    <button id="save-btn" onclick="saveData()">結果(CSV)を保存する</button>
+<div id="final-area">
+    <h2 style="margin-bottom:30px;">全テスト完了！</h2>
+    <button id="save-btn" onclick="saveData()">CSVを保存して終了</button>
 </div>
 
 <script>
-    let currentMode = 'Right'; 
-    let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Timestamp,Adjusted,Mode\n";
-    let lastTapTime = 0;
-    let lastKey = "";
-
-    function setMode(mode) {
-        currentMode = mode;
-        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-        if(mode === 'Right') document.getElementById('btn-right').classList.add('active');
-        if(mode === 'Left') document.getElementById('btn-left').classList.add('active');
-        if(mode === 'Both') document.getElementById('btn-both').classList.add('active');
-    }
-
+    // ワードリスト（40代〜シニア：家族・健康・日常）
     const masterWords = [
-        "RINGO", "NEKO", "INU", "TOKYO", "KASASA", "YAMA", "KAWA", "HANA", "SORA", "UMI",
-        "APPLE", "BANANA", "CHERRY", "DOG", "ELEPHANT", "FOX", "GRAPE", "HORSE", "ICE", "JACK",
-        "KING", "LEMON", "MOON", "NIGHT", "ORANGE", "PIANO", "QUEEN", "RIVER", "SUN", "TIGER"
+        "KAZOKU", "SANPO", "GENKI", "MUSUME", "MUSUKO", 
+        "SMILE", "KIBOU", "MEIRU", "YOTEI", "OCHA",
+        "KUSURI", "OUEN", "SUSHI", "DENWA", "SAKURA"
     ];
 
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array.slice(0, 15);
+    let log = "No,TargetWord,KeyPressed,Interval_MS,Adjusted,Mode,Timestamp\n";
+    let words = [...masterWords]; 
+    let wordIdx = 0;
+    let lastKeyTime = 0;
+    let wordStartTime = 0;
+
+    const offsets = {
+        'Q': 150, 'A': 150, 'Z': 150, 'W': 110, 'S': 110, 'X': 110, 'E': 80, 'D': 80, 'C': 80,
+        'R': 50, 'F': 50, 'V': 50, 'T': 25, 'G': 25, 'B': 25, 'Y': 25, 'H': 25, 'N': 25,
+        'U': 50, 'J': 50, 'M': 50, 'I': 80, 'K': 80, 'O': 110, 'L': 110, 'P': 150
+    };
+    const leftSideKeys = ['Q','W','E','R','T','A','S','D','F','G','Z','X','C','V','B'];
+
+    function updateUI() {
+        const isChameleon = (wordIdx % 2 !== 0); // 偶数問目がカメレオン
+        const modeText = isChameleon ? "カメレオン(ON)" : "補正なし(OFF)";
+        const modeEl = document.getElementById('mode-display');
+        modeEl.innerText = "モード：" + modeText;
+        modeEl.className = isChameleon ? "mode-chameleon" : "mode-normal";
+        
+        document.getElementById('progress').innerText = "第 " + (wordIdx + 1) + " / " + words.length + " 問";
+        document.getElementById('target').innerText = words[wordIdx];
+        wordStartTime = Date.now();
+        lastKeyTime = 0;
     }
 
-    let words = shuffle([...masterWords]);
-    let idx = 0;
-
-    window.onload = () => {
-        document.getElementById('progress').innerText = "第 1 / " + words.length + " 問";
-        document.getElementById('target').innerText = words[0];
-    };
-
-    // 【改良ポイント】全キーに「あそび（補正値）」を設定。
-    // 中央でも最低20pxのゆとりを持たせ、端ほど大きく広げる
-    const offsets = {
-        'Q': 150, 'A': 150, 'Z': 150,
-        'W': 110, 'S': 110, 'X': 110,
-        'E': 80,  'D': 80,  'C': 80,
-        'R': 50,  'F': 50,  'V': 50,
-        'T': 25,  'G': 25,  'B': 25, 
-        'Y': 25,  'H': 25,  'N': 25, 
-        'U': 50,  'J': 50,  'M': 50,
-        'I': 80,  'K': 80,
-        'O': 110, 'L': 110,
-        'P': 150
-    };
-
-    const leftSideKeys = ['Q','W','E','R','T','A','S','D','F','G','Z','X','C','V','B'];
+    window.onload = updateUI;
 
     function tap(k) {
         const now = Date.now();
-        if (k === lastKey && (now - lastTapTime < 100)) return;
+        const isChameleon = (wordIdx % 2 !== 0);
         
-        lastTapTime = now;
-        lastKey = k;
-
-        const e = window.event;
-        let x = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-        let y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        let adjusted = false;
-
-        if (offsets[k] !== undefined) {
-            if (currentMode === 'Left') {
-                x -= (offsets[k] * 2); 
-                adjusted = true;
-            } else if (currentMode === 'Right') {
-                x += (offsets[k] * 2);
-                adjusted = true;
-            } else if (currentMode === 'Both') {
-                // 両手モード：中央キーも含め、必ず外側へ補正をかける
-                if (leftSideKeys.includes(k)) {
-                    x -= offsets[k]; 
-                } else {
-                    x += offsets[k];
-                }
-                adjusted = true; // offsets[k]が25以上なので常にYESになる
-            }
+        // リズム（打鍵間隔 IKI）の算出
+        let interval = 0;
+        if (lastKeyTime !== 0) {
+            interval = now - lastKeyTime;
         }
+        lastKeyTime = now;
 
-        log += (idx+1) + "," + words[idx] + "," + k + "," + x.toFixed(1) + "," + y.toFixed(1) + "," + Date.now() + "," + (adjusted ? "YES" : "NO") + "," + currentMode + "\n";
+        // 補正処理
+        let adjusted = isChameleon ? "YES" : "NO";
+        
+        // ログ記録
+        log += (wordIdx + 1) + "," + words[wordIdx] + "," + k + "," + interval + "," + adjusted + "," + (isChameleon ? "Chameleon" : "Normal") + "," + now + "\n";
         
         const displayEl = document.getElementById('display');
         displayEl.innerText += k;
 
-        if (displayEl.innerText.length >= words[idx].length) {
-            idx++;
-            if (idx < words.length) {
+        // 単語完了判定
+        if (displayEl.innerText.length >= words[wordIdx].length) {
+            wordIdx++;
+            if (wordIdx < words.length) {
                 setTimeout(() => {
-                    document.getElementById('progress').innerText = "第 " + (idx + 1) + " / " + words.length + " 問";
-                    document.getElementById('target').innerText = words[idx];
                     displayEl.innerText = "";
+                    updateUI();
                 }, 300);
             } else {
                 document.getElementById('kb-area').style.display = "none";
-                document.getElementById('save-area').style.display = "block";
-                document.getElementById('target').innerText = "V2.0 テスト完了！";
-                displayEl.innerText = "お疲れ様でした";
+                document.getElementById('box').style.display = "none";
+                document.getElementById('status-bar').style.display = "none";
+                document.getElementById('final-area').style.display = "block";
             }
         }
     }
@@ -188,7 +144,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "chameleon_V2_test.csv";
+        a.download = "chameleon_AB_test_100.csv";
         a.click();
     }
 </script>
