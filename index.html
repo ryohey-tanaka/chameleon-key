@@ -2,12 +2,23 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chameleon Logic - 3Mode Master v2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Chameleon Master - Precision Edition</title>
     <style>
-        html, body { height: 100%; overflow: hidden; margin: 0; padding: 10px; background: #f0f2f5; font-family: sans-serif; touch-action: none; }
+        /* touch-action: manipulation でダブルタップズームを無効化 */
+        html, body { 
+            height: 100%; 
+            overflow: hidden; 
+            margin: 0; 
+            padding: 10px; 
+            background: #f0f2f5; 
+            font-family: sans-serif; 
+            touch-action: manipulation; 
+            -webkit-user-select: none; /* テキスト選択によるズームも防止 */
+        }
+        
         #setup-screen { position: absolute; top:0; left:0; width:100%; height:100%; background:white; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; }
-        .setup-btn { width: 100%; max-width: 300px; padding: 20px; margin: 10px; font-size: 20px; font-weight: bold; border: none; border-radius: 12px; background: #007bff; color: white; cursor: pointer; }
+        .setup-btn { width: 100%; max-width: 300px; padding: 20px; margin: 10px; font-size: 20px; font-weight: bold; border: none; border-radius: 12px; background: #007bff; color: white; }
         
         #box { background: #fff; padding: 12px; border-radius: 15px; text-align: center; margin-bottom: 8px; border: 2px solid #ddd; }
         #target { font-size: 26px; font-weight: bold; color: #333; letter-spacing: 2px; }
@@ -22,7 +33,7 @@
         .key {
             flex: 1; background: #fff; border: 1px solid #ccc; border-radius: 6px;
             font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 0 #bbb;
+            box-shadow: 0 2px 0 #bbb; pointer-events: none;
         }
 
         #final-area { display: none; text-align: center; padding: 20px; }
@@ -56,7 +67,8 @@
 </div>
 
 <div id="final-area">
-    <h2>テスト完了！</h2>
+    <h2 style="color: #28a745;">テスト完了！</h2>
+    <p>ブラウザの制限を解除しました。<br>CSV保存後、通常通りタブを閉じられます。</p>
     <button id="save-btn" onclick="saveData()">CSVを保存して終了</button>
 </div>
 
@@ -73,7 +85,6 @@
     let lastKeyTime = 0;
     let handStyle = "";
 
-    // キーボード描画
     keys.forEach((row, i) => {
         const rowEl = document.getElementById('row' + (i+1));
         row.forEach(k => {
@@ -103,22 +114,23 @@
         lastKeyTime = 0;
     }
 
-    // タップイベント（全域を監視）
+    // タッチ開始時にデフォルト動作を抑制しつつ座標取得
     document.addEventListener('touchstart', function(e) {
         if (document.getElementById('setup-screen').style.display !== 'none') return;
         
+        // テスト完了後はブラウザ操作を邪魔しない
+        if (document.getElementById('final-area').style.display === 'block') return;
+
         const touch = e.touches[0];
         const kbArea = document.getElementById('kb-area');
         const rect = kbArea.getBoundingClientRect();
         
-        // キーボードエリア内での座標を計算
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-
-        // エリア外のタッチは無視
         if (touch.clientY < rect.top || touch.clientY > rect.bottom) return;
 
-        processTap(touch.clientX, touch.clientY, x, y);
+        // ズーム防止
+        if (e.touches.length > 1) e.preventDefault(); 
+
+        processTap(touch.clientX, touch.clientY, touch.clientX - rect.left, touch.clientY - rect.top);
     }, { passive: false });
 
     function processTap(globalX, globalY, localX, localY) {
@@ -132,7 +144,6 @@
         let adjusted = "NO";
         let status = "MISS";
 
-        // 1. 標準判定（物理的なボタンの内側か）
         keys.flat().forEach(k => {
             const el = document.getElementById('key-' + k);
             const r = el.getBoundingClientRect();
@@ -144,7 +155,6 @@
             }
         });
 
-        // 2. カメレオン判定（隙間を叩いた場合、一番近いキーを拾う）
         if (!foundInside && isChameleon) {
             let minDist = Infinity;
             keys.flat().forEach(k => {
@@ -153,19 +163,14 @@
                 const centerX = r.left + r.width / 2;
                 const centerY = r.top + r.height / 2;
                 const dist = Math.sqrt(Math.pow(globalX - centerX, 2) + Math.pow(globalY - centerY, 2));
-                if (dist < minDist) {
-                    minDist = dist;
-                    bestKey = k;
-                }
+                if (dist < minDist) { minDist = dist; bestKey = k; }
             });
             status = "SUCCESS";
             adjusted = "YES";
         }
 
-        // ログ出力
         log += `${wordIdx+1},${masterWords[wordIdx]},${bestKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${isChameleon ? 'Chameleon' : 'Normal'},${now}\n`;
 
-        // 画面反映
         if (status === "SUCCESS") {
             const displayEl = document.getElementById('display');
             displayEl.innerText += bestKey;
@@ -181,6 +186,10 @@
         document.getElementById('box').style.display = 'none';
         document.getElementById('status-bar').style.display = 'none';
         document.getElementById('final-area').style.display = 'block';
+        
+        // 最後に「工具」が効くようにスタイルを解放
+        document.body.style.overflow = 'auto';
+        document.body.style.touchAction = 'auto';
     }
 
     function saveData() {
@@ -188,7 +197,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `chameleon_AB_test_${handStyle}.csv`;
+        a.download = `chameleon_test_${handStyle}.csv`;
         a.click();
     }
 </script>
