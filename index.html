@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chameleon Master - Precision v3</title>
+    <title>Chameleon Master - Snap Edition</title>
     <style>
         html, body { 
             height: 100%; 
@@ -21,7 +21,7 @@
         
         #box { background: #fff; padding: 12px; border-radius: 15px; text-align: center; margin-bottom: 8px; border: 2px solid #ddd; }
         #target { font-size: 26px; font-weight: bold; color: #333; letter-spacing: 2px; }
-        #display { font-size: 28px; color: #007bff; min-height: 1.2em; font-weight: bold; background: #eee; border-radius: 8px; margin-top: 8px; display: flex; align-items: center; justify-content: center; }
+        #display { font-size: 28px; color: #28a745; min-height: 1.2em; font-weight: bold; background: #e8f5e9; border-radius: 8px; margin-top: 8px; display: flex; align-items: center; justify-content: center; }
         
         #status-bar { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; font-weight: bold; color: #555; }
         .mode-normal { color: #d9534f; } 
@@ -67,7 +67,7 @@
 
 <div id="final-area">
     <h2 style="color: #28a745;">テスト完了！</h2>
-    <p>MISSを含めすべての打鍵を記録しました。</p>
+    <p>吸い付くような入力を体感できましたか？</p>
     <button id="save-btn" onclick="saveData()">CSVを保存して終了</button>
 </div>
 
@@ -136,7 +136,7 @@
         let bestKey = "";
         let foundInside = false;
         let adjusted = "NO";
-        let status = "MISS"; // 初期値はMISS
+        let status = "MISS";
 
         // 1. 標準判定
         keys.flat().forEach(k => {
@@ -150,7 +150,7 @@
             }
         });
 
-        // 2. カメレオン判定（隙間のときだけ発動）
+        // 2. カメレオン判定（重要：ここがMかNかを決めるネジ山です）
         if (!foundInside && isChameleon) {
             let minDist = Infinity;
             keys.flat().forEach(k => {
@@ -165,13 +165,16 @@
             adjusted = "YES";
         }
 
-        // 重要：叩いた瞬間に必ず1行ログを残す（MISSでも残る）
+        // ログ出力
         const logicMode = isChameleon ? 'Chameleon' : 'Normal';
         log += `${wordIdx+1},${masterWords[wordIdx]},${bestKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${logicMode},${now}\n`;
 
+        // ★【改善ポイント】カメレオンが選んだ bestKey をそのまま画面に出す
         if (status === "SUCCESS") {
             const displayEl = document.getElementById('display');
-            displayEl.innerText += bestKey;
+            // bestKey（補正後の文字）を表示に追加
+            displayEl.innerText += bestKey; 
+            
             if (displayEl.innerText.length >= masterWords[wordIdx].length) {
                 wordIdx++;
                 setTimeout(wordIdx < masterWords.length ? updateUI : finish, 200);
@@ -193,7 +196,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `chameleon_miss_log_${handStyle}.csv`;
+        a.download = `chameleon_snap_test_${handStyle}.csv`;
         a.click();
     }
 </script>
