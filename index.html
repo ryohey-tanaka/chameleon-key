@@ -3,38 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chameleon Master - Snap Edition</title>
+    <title>Chameleon Master - Target Snap v4</title>
     <style>
         html, body { 
-            height: 100%; 
-            overflow: hidden; 
-            margin: 0; 
-            padding: 10px; 
-            background: #f0f2f5; 
-            font-family: sans-serif; 
-            touch-action: manipulation; 
-            -webkit-user-select: none;
+            height: 100%; overflow: hidden; margin: 0; padding: 10px; 
+            background: #f0f2f5; font-family: sans-serif; 
+            touch-action: manipulation; -webkit-user-select: none;
         }
-        
         #setup-screen { position: absolute; top:0; left:0; width:100%; height:100%; background:white; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; }
         .setup-btn { width: 100%; max-width: 300px; padding: 20px; margin: 10px; font-size: 20px; font-weight: bold; border: none; border-radius: 12px; background: #007bff; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        
         #box { background: #fff; padding: 12px; border-radius: 15px; text-align: center; margin-bottom: 8px; border: 2px solid #ddd; }
         #target { font-size: 26px; font-weight: bold; color: #333; letter-spacing: 2px; }
         #display { font-size: 28px; color: #28a745; min-height: 1.2em; font-weight: bold; background: #e8f5e9; border-radius: 8px; margin-top: 8px; display: flex; align-items: center; justify-content: center; }
-        
         #status-bar { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; font-weight: bold; color: #555; }
-        .mode-normal { color: #d9534f; } 
-        .mode-chameleon { color: #5cb85c; }
-
+        .mode-normal { color: #d9534f; } .mode-chameleon { color: #5cb85c; }
         .kb-container { display: flex; flex-direction: column; gap: 4px; height: 50%; position: relative; }
         .row { display: flex; justify-content: center; gap: 4px; flex: 1; }
-        .key {
-            flex: 1; background: #fff; border: 1px solid #ccc; border-radius: 6px;
-            font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 0 #bbb; pointer-events: none;
-        }
-
+        .key { flex: 1; background: #fff; border: 1px solid #ccc; border-radius: 6px; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 0 #bbb; pointer-events: none; }
         #final-area { display: none; text-align: center; padding: 20px; }
         #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 10px; font-size: 20px; width: 100%; font-weight: bold; }
     </style>
@@ -54,43 +39,29 @@
     <div id="logic-display">-</div>
 </div>
 
-<div id="box">
-    <div id="target">----</div>
-    <div id="display"></div>
-</div>
+<div id="box"><div id="target">----</div><div id="display"></div></div>
 
 <div class="kb-container" id="kb-area">
-    <div class="row" id="row1"></div>
-    <div class="row" id="row2"></div>
-    <div class="row" id="row3"></div>
+    <div class="row" id="row1"></div><div class="row" id="row2"></div><div class="row" id="row3"></div>
 </div>
 
 <div id="final-area">
     <h2 style="color: #28a745;">テスト完了！</h2>
-    <p>吸い付くような入力を体感できましたか？</p>
+    <p>「正解へ吸い付く」ログが取れているはずです。</p>
     <button id="save-btn" onclick="saveData()">CSVを保存して終了</button>
 </div>
 
 <script>
     const masterWords = ["KAZOKU", "SANPO", "GENKI", "MUSUME", "MUSUKO", "SMILE", "KIBOU", "MEIRU", "YOTEI", "OCHA", "KUSURI", "OUEN", "SUSHI", "DENWA", "SAKURA"];
-    const keys = [
-        ["Q","W","E","R","T","Y","U","I","O","P"],
-        ["A","S","D","F","G","H","J","K","L"],
-        ["Z","X","C","V","B","N","M"]
-    ];
-
+    const keys = [["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L"],["Z","X","C","V","B","N","M"]];
     let log = "No,TargetWord,KeyPressed,TouchX,TouchY,Interval_MS,Adjusted,Status,HandStyle,LogicMode,Timestamp\n";
-    let wordIdx = 0;
-    let lastKeyTime = 0;
-    let handStyle = "";
+    let wordIdx = 0, lastKeyTime = 0, handStyle = "";
 
     keys.forEach((row, i) => {
         const rowEl = document.getElementById('row' + (i+1));
         row.forEach(k => {
             const div = document.createElement('div');
-            div.className = 'key';
-            div.innerText = k;
-            div.id = 'key-' + k;
+            div.className = 'key'; div.innerText = k; div.id = 'key-' + k;
             rowEl.appendChild(div);
         });
     });
@@ -114,68 +85,76 @@
     }
 
     document.addEventListener('touchstart', function(e) {
-        if (document.getElementById('setup-screen').style.display !== 'none') return;
-        if (document.getElementById('final-area').style.display === 'block') return;
-
+        if (document.getElementById('setup-screen').style.display !== 'none' || document.getElementById('final-area').style.display === 'block') return;
         const touch = e.touches[0];
-        const kbArea = document.getElementById('kb-area');
-        const rect = kbArea.getBoundingClientRect();
-        
+        const rect = document.getElementById('kb-area').getBoundingClientRect();
         if (touch.clientY < rect.top || touch.clientY > rect.bottom) return;
-        if (e.touches.length > 1) e.preventDefault(); 
-
+        if (e.touches.length > 1) e.preventDefault();
         processTap(touch.clientX, touch.clientY, touch.clientX - rect.left, touch.clientY - rect.top);
     }, { passive: false });
 
     function processTap(globalX, globalY, localX, localY) {
         const isChameleon = (wordIdx % 2 !== 0);
+        const currentTargetWord = masterWords[wordIdx];
+        const currentProgress = document.getElementById('display').innerText.length;
+        const targetChar = currentTargetWord[currentProgress]; // 今打つべき「正解の文字」
+
         const now = Date.now();
         const interval = lastKeyTime === 0 ? 0 : now - lastKeyTime;
         lastKeyTime = now;
 
-        let bestKey = "";
-        let foundInside = false;
+        let finalKey = "";
         let adjusted = "NO";
         let status = "MISS";
 
-        // 1. 標準判定
-        keys.flat().forEach(k => {
-            const el = document.getElementById('key-' + k);
-            const r = el.getBoundingClientRect();
-            if (globalX >= r.left && globalX <= r.right && globalY >= r.top && globalY <= r.bottom) {
-                bestKey = k;
-                foundInside = true;
-                status = "SUCCESS";
-                adjusted = "NO";
-            }
-        });
+        // --- 判定ロジックの核心：ターゲット吸着 ---
+        
+        // 1. まず「正解のキー」の場所を確認
+        const targetEl = document.getElementById('key-' + targetChar);
+        const targetRect = targetEl.getBoundingClientRect();
+        const isInsideTarget = (globalX >= targetRect.left && globalX <= targetRect.right && globalY >= targetRect.top && globalY <= targetRect.bottom);
 
-        // 2. カメレオン判定（重要：ここがMかNかを決めるネジ山です）
-        if (!foundInside && isChameleon) {
+        if (isInsideTarget) {
+            // 正解の枠内なら文句なしの成功
+            finalKey = targetChar;
+            status = "SUCCESS";
+            adjusted = "NO";
+        } else if (isChameleon) {
+            // カメレオンモードなら、枠外でも「一番近いキー」を判定
             let minDist = Infinity;
+            let nearestKey = "";
             keys.flat().forEach(k => {
                 const el = document.getElementById('key-' + k);
                 const r = el.getBoundingClientRect();
                 const centerX = r.left + r.width / 2;
                 const centerY = r.top + r.height / 2;
                 const dist = Math.sqrt(Math.pow(globalX - centerX, 2) + Math.pow(globalY - centerY, 2));
-                if (dist < minDist) { minDist = dist; bestKey = k; }
+                if (dist < minDist) { minDist = dist; nearestKey = k; }
             });
-            status = "SUCCESS";
-            adjusted = "YES";
+
+            // 一番近いのが「正解」だったら、補正成功！
+            if (nearestKey === targetChar) {
+                finalKey = targetChar;
+                status = "SUCCESS";
+                adjusted = "YES";
+            } else {
+                // 正解以外のキーの近くを叩いた場合はミス（現状の仕様に合わせる）
+                finalKey = nearestKey;
+                status = "MISS"; 
+                adjusted = "NO";
+            }
+        } else {
+            // Normalモードで枠外なら一律ミス
+            status = "MISS";
+            adjusted = "NO";
         }
 
-        // ログ出力
-        const logicMode = isChameleon ? 'Chameleon' : 'Normal';
-        log += `${wordIdx+1},${masterWords[wordIdx]},${bestKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${logicMode},${now}\n`;
+        // ログ記録
+        log += `${wordIdx+1},${currentTargetWord},${finalKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${isChameleon ? 'Chameleon' : 'Normal'},${now}\n`;
 
-        // ★【改善ポイント】カメレオンが選んだ bestKey をそのまま画面に出す
         if (status === "SUCCESS") {
-            const displayEl = document.getElementById('display');
-            // bestKey（補正後の文字）を表示に追加
-            displayEl.innerText += bestKey; 
-            
-            if (displayEl.innerText.length >= masterWords[wordIdx].length) {
+            document.getElementById('display').innerText += finalKey;
+            if (document.getElementById('display').innerText.length >= currentTargetWord.length) {
                 wordIdx++;
                 setTimeout(wordIdx < masterWords.length ? updateUI : finish, 200);
             }
@@ -187,8 +166,7 @@
         document.getElementById('box').style.display = 'none';
         document.getElementById('status-bar').style.display = 'none';
         document.getElementById('final-area').style.display = 'block';
-        document.body.style.overflow = 'auto';
-        document.body.style.touchAction = 'auto';
+        document.body.style.overflow = 'auto'; document.body.style.touchAction = 'auto';
     }
 
     function saveData() {
@@ -196,7 +174,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `chameleon_snap_test_${handStyle}.csv`;
+        a.download = `chameleon_snap_v4_${handStyle}.csv`;
         a.click();
     }
 </script>
