@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chameleon Master - Target Snap v4</title>
+    <title>Chameleon Master - Precision Snap v5</title>
     <style>
         html, body { 
             height: 100%; overflow: hidden; margin: 0; padding: 10px; 
@@ -47,7 +47,7 @@
 
 <div id="final-area">
     <h2 style="color: #28a745;">テスト完了！</h2>
-    <p>「正解へ吸い付く」ログが取れているはずです。</p>
+    <p>指がズレても「正解」が表示される快感をログに記録しました。</p>
     <button id="save-btn" onclick="saveData()">CSVを保存して終了</button>
 </div>
 
@@ -96,31 +96,34 @@
     function processTap(globalX, globalY, localX, localY) {
         const isChameleon = (wordIdx % 2 !== 0);
         const currentTargetWord = masterWords[wordIdx];
-        const currentProgress = document.getElementById('display').innerText.length;
-        const targetChar = currentTargetWord[currentProgress]; // 今打つべき「正解の文字」
+        const currentDisplay = document.getElementById('display').innerText;
+        const targetChar = currentTargetWord[currentDisplay.length]; // 今打つべき「正解」
 
         const now = Date.now();
         const interval = lastKeyTime === 0 ? 0 : now - lastKeyTime;
         lastKeyTime = now;
 
-        let finalKey = "";
+        let bestKey = "";
+        let foundInside = false;
         let adjusted = "NO";
         let status = "MISS";
 
-        // --- 判定ロジックの核心：ターゲット吸着 ---
-        
-        // 1. まず「正解のキー」の場所を確認
-        const targetEl = document.getElementById('key-' + targetChar);
-        const targetRect = targetEl.getBoundingClientRect();
-        const isInsideTarget = (globalX >= targetRect.left && globalX <= targetRect.right && globalY >= targetRect.top && globalY <= targetRect.bottom);
+        // 1. まず、物理的に「どこ」を叩いたかを特定する
+        keys.flat().forEach(k => {
+            const el = document.getElementById('key-' + k);
+            const r = el.getBoundingClientRect();
+            if (globalX >= r.left && globalX <= r.right && globalY >= r.top && globalY <= r.bottom) {
+                bestKey = k;
+                foundInside = true;
+            }
+        });
 
-        if (isInsideTarget) {
-            // 正解の枠内なら文句なしの成功
-            finalKey = targetChar;
+        // 2. 判定ロジック
+        if (foundInside && bestKey === targetChar) {
+            // 正解の枠内を叩いた（文句なし）
             status = "SUCCESS";
-            adjusted = "NO";
         } else if (isChameleon) {
-            // カメレオンモードなら、枠外でも「一番近いキー」を判定
+            // カメレオンモード：枠外、または違うキーを叩いても「一番近い」のが正解なら救済
             let minDist = Infinity;
             let nearestKey = "";
             keys.flat().forEach(k => {
@@ -132,29 +135,22 @@
                 if (dist < minDist) { minDist = dist; nearestKey = k; }
             });
 
-            // 一番近いのが「正解」だったら、補正成功！
             if (nearestKey === targetChar) {
-                finalKey = targetChar;
+                bestKey = targetChar; // 表示も正解にスナップ！
                 status = "SUCCESS";
                 adjusted = "YES";
-            } else {
-                // 正解以外のキーの近くを叩いた場合はミス（現状の仕様に合わせる）
-                finalKey = nearestKey;
-                status = "MISS"; 
-                adjusted = "NO";
             }
-        } else {
-            // Normalモードで枠外なら一律ミス
-            status = "MISS";
-            adjusted = "NO";
         }
 
         // ログ記録
-        log += `${wordIdx+1},${currentTargetWord},${finalKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${isChameleon ? 'Chameleon' : 'Normal'},${now}\n`;
+        const logicMode = isChameleon ? 'Chameleon' : 'Normal';
+        log += `${wordIdx+1},${currentTargetWord},${bestKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${logicMode},${now}\n`;
 
+        // 画面への反映
         if (status === "SUCCESS") {
-            document.getElementById('display').innerText += finalKey;
-            if (document.getElementById('display').innerText.length >= currentTargetWord.length) {
+            const displayEl = document.getElementById('display');
+            displayEl.innerText += targetChar; // 正解を表示
+            if (displayEl.innerText.length >= currentTargetWord.length) {
                 wordIdx++;
                 setTimeout(wordIdx < masterWords.length ? updateUI : finish, 200);
             }
@@ -174,7 +170,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `chameleon_snap_v4_${handStyle}.csv`;
+        a.download = `chameleon_final_test_${handStyle}.csv`;
         a.click();
     }
 </script>
