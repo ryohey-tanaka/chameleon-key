@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chameleon Master - Precision Snap v5</title>
+    <title>Chameleon Typing Test - Professional Edition</title>
     <style>
         html, body { 
             height: 100%; overflow: hidden; margin: 0; padding: 10px; 
@@ -21,20 +21,20 @@
         .row { display: flex; justify-content: center; gap: 4px; flex: 1; }
         .key { flex: 1; background: #fff; border: 1px solid #ccc; border-radius: 6px; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 0 #bbb; pointer-events: none; }
         #final-area { display: none; text-align: center; padding: 20px; }
-        #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 10px; font-size: 20px; width: 100%; font-weight: bold; }
+        #save-btn { background: #28a745; color: white; border: none; padding: 20px; border-radius: 10px; font-size: 20px; width: 100%; font-weight: bold; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div id="setup-screen">
-    <h1 style="font-size:20px; margin-bottom:20px;">打ち方を選択してください</h1>
-    <button class="setup-btn" onclick="startTest('Right')">右手モード</button>
-    <button class="setup-btn" onclick="startTest('Left')">左手モード</button>
-    <button class="setup-btn" onclick="startTest('Both')">両手モード</button>
+    <h1 style="font-size:20px; margin-bottom:20px;">打鍵テスト：入力モード選択</h1>
+    <button class="setup-btn" onclick="startTest('Right')">右手操作モード</button>
+    <button class="setup-btn" onclick="startTest('Left')">左手操作モード</button>
+    <button class="setup-btn" onclick="startTest('Both')">両手操作モード</button>
 </div>
 
 <div id="status-bar">
-    <div id="progress">Ready</div>
+    <div id="progress">準備完了</div>
     <div id="hand-mode-display">-</div>
     <div id="logic-display">-</div>
 </div>
@@ -46,9 +46,13 @@
 </div>
 
 <div id="final-area">
-    <h2 style="color: #28a745;">テスト完了！</h2>
-    <p>指がズレても「正解」が表示される快感をログに記録しました。</p>
-    <button id="save-btn" onclick="saveData()">CSVを保存して終了</button>
+    <h2 style="color: #333;">テスト終了</h2>
+    <p style="text-align: left; font-size: 14px; line-height: 1.6; color: #666; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+        ご協力ありがとうございました。<br>
+        本システムの最適化アルゴリズムにより、入力精度および詳細な打鍵ログが正常に記録されました。<br><br>
+        下のボタンを押し、CSVファイルを保存して提出してください。
+    </p>
+    <button id="save-btn" onclick="saveData()">CSVを保存して完了</button>
 </div>
 
 <script>
@@ -69,14 +73,14 @@
     function startTest(style) {
         handStyle = style;
         document.getElementById('setup-screen').style.display = 'none';
-        document.getElementById('hand-mode-display').innerText = "Style: " + style;
+        document.getElementById('hand-mode-display').innerText = "操作手: " + style;
         updateUI();
     }
 
     function updateUI() {
         const isChameleon = (wordIdx % 2 !== 0);
         const logicEl = document.getElementById('logic-display');
-        logicEl.innerText = isChameleon ? "Mode: Chameleon" : "Mode: Normal";
+        logicEl.innerText = isChameleon ? "モード: アダプティブ" : "モード: スタンダード";
         logicEl.className = isChameleon ? "mode-chameleon" : "mode-normal";
         document.getElementById('progress').innerText = (wordIdx + 1) + " / " + masterWords.length;
         document.getElementById('target').innerText = masterWords[wordIdx];
@@ -96,34 +100,26 @@
     function processTap(globalX, globalY, localX, localY) {
         const isChameleon = (wordIdx % 2 !== 0);
         const currentTargetWord = masterWords[wordIdx];
-        const currentDisplay = document.getElementById('display').innerText;
-        const targetChar = currentTargetWord[currentDisplay.length]; // 今打つべき「正解」
+        const currentProgress = document.getElementById('display').innerText.length;
+        const targetChar = currentTargetWord[currentProgress];
 
         const now = Date.now();
         const interval = lastKeyTime === 0 ? 0 : now - lastKeyTime;
         lastKeyTime = now;
 
-        let bestKey = "";
-        let foundInside = false;
+        let finalKey = "";
         let adjusted = "NO";
         let status = "MISS";
 
-        // 1. まず、物理的に「どこ」を叩いたかを特定する
-        keys.flat().forEach(k => {
-            const el = document.getElementById('key-' + k);
-            const r = el.getBoundingClientRect();
-            if (globalX >= r.left && globalX <= r.right && globalY >= r.top && globalY <= r.bottom) {
-                bestKey = k;
-                foundInside = true;
-            }
-        });
+        const targetEl = document.getElementById('key-' + targetChar);
+        const targetRect = targetEl.getBoundingClientRect();
+        const isInsideTarget = (globalX >= targetRect.left && globalX <= targetRect.right && globalY >= targetRect.top && globalY <= targetRect.bottom);
 
-        // 2. 判定ロジック
-        if (foundInside && bestKey === targetChar) {
-            // 正解の枠内を叩いた（文句なし）
+        if (isInsideTarget) {
+            finalKey = targetChar;
             status = "SUCCESS";
+            adjusted = "NO";
         } else if (isChameleon) {
-            // カメレオンモード：枠外、または違うキーを叩いても「一番近い」のが正解なら救済
             let minDist = Infinity;
             let nearestKey = "";
             keys.flat().forEach(k => {
@@ -136,21 +132,24 @@
             });
 
             if (nearestKey === targetChar) {
-                bestKey = targetChar; // 表示も正解にスナップ！
+                finalKey = targetChar;
                 status = "SUCCESS";
                 adjusted = "YES";
+            } else {
+                finalKey = nearestKey;
+                status = "MISS"; 
+                adjusted = "NO";
             }
+        } else {
+            status = "MISS";
+            adjusted = "NO";
         }
 
-        // ログ記録
-        const logicMode = isChameleon ? 'Chameleon' : 'Normal';
-        log += `${wordIdx+1},${currentTargetWord},${bestKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${logicMode},${now}\n`;
+        log += `${wordIdx+1},${currentTargetWord},${finalKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${isChameleon ? 'Chameleon' : 'Normal'},${now}\n`;
 
-        // 画面への反映
         if (status === "SUCCESS") {
-            const displayEl = document.getElementById('display');
-            displayEl.innerText += targetChar; // 正解を表示
-            if (displayEl.innerText.length >= currentTargetWord.length) {
+            document.getElementById('display').innerText += finalKey;
+            if (document.getElementById('display').innerText.length >= currentTargetWord.length) {
                 wordIdx++;
                 setTimeout(wordIdx < masterWords.length ? updateUI : finish, 200);
             }
@@ -170,7 +169,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `chameleon_final_test_${handStyle}.csv`;
+        a.download = `typing_log_${handStyle}_${new Date().getTime()}.csv`;
         a.click();
     }
 </script>
