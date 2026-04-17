@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chameleon Typing Test - Grand Survey Edition (Snap v6)</title>
+    <title>Chameleon Typing Test - Grand Survey Edition (Snap v7)</title>
     <style>
         html, body { 
             height: 100%; overflow: hidden; margin: 0; padding: 10px; 
@@ -52,7 +52,11 @@
 
 <script>
     const masterWords = ["KAZOKU", "SANPO", "GENKI", "MUSUME", "MUSUKO", "SMILE", "KIBOU", "MEIRU", "YOTEI", "OCHA", "KUSURI", "OUEN", "SUSHI", "DENWA", "SAKURA"];
-    const keys = [["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L"],["Z","X","C","V","B","N","M"]];
+    const keys = [
+        ["Q","W","E","R","T","Y","U","I","O","P"], // 1段目
+        ["A","S","D","F","G","H","J","K","L"],     // 2段目
+        ["Z","X","C","V","B","N","M"]               // 3段目
+    ];
     const EDGE_KEYS = ["Q", "W", "A", "S", "Z", "X", "O", "P", "K", "L", "N", "M"];
     let log = "", wordIdx = 0, lastKeyTime = 0, handStyle = "", deviceNameInput = "";
 
@@ -113,13 +117,20 @@
             keys.flat().forEach(k => {
                 const el = document.getElementById('key-' + k);
                 const r = el.getBoundingClientRect();
-                const rawDist = Math.sqrt(Math.pow(globalX - (r.left + r.width/2), 2) + Math.pow(globalY - (r.top + r.height/2), 2));
+                const centerY = r.top + r.height / 2;
+                const centerX = r.left + r.width / 2;
+                const rawDist = Math.sqrt(Math.pow(globalX - centerX, 2) + Math.pow(globalY - centerY, 2));
                 
-                // Snap v6 logic: 全方位磁力強化
-                let weight = 1.0;
-                if (k === targetChar) weight *= 1.2; // ターゲット文字への吸着
-                if (EDGE_KEYS.includes(k)) weight *= 2.0; // 端キーは超強力に
+                // Snap v7 logic: 最終チューニング
+                let weight = 1.2; // 全体ベース磁力を1.2倍に底上げ
                 
+                if (k === targetChar) weight *= 1.2; // ターゲット文字への優先吸着
+                if (EDGE_KEYS.includes(k)) weight *= 1.6; // 端キー補正（左右バランスを考慮し、全体底上げ分を含めて調整）
+                
+                // 1段目と3段目の上下方向へのバイアス
+                if (keys[0].includes(k) && globalY > centerY) weight *= 1.1; // 1段目の下側に吸着
+                if (keys[2].includes(k) && globalY < centerY) weight *= 1.1; // 3段目の上側に吸着
+
                 const dist = rawDist / weight;
                 if (dist < minDist) { minDist = dist; finalKey = k; }
             });
@@ -146,7 +157,7 @@
         const blob = new Blob([log], {type: 'text/csv'});
         const a = document.createElement("a");
         a.href = window.URL.createObjectURL(blob);
-        a.download = `survey_v6_${deviceNameInput}_${Date.now()}.csv`;
+        a.download = `survey_v7_final_${deviceNameInput}_${Date.now()}.csv`;
         a.click();
     }
 </script>
