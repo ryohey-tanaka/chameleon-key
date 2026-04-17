@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chameleon Typing Test - Grand Survey Edition (Snap v5)</title>
+    <title>Chameleon Typing Test - Grand Survey Edition (Snap v6)</title>
     <style>
         html, body { 
             height: 100%; overflow: hidden; margin: 0; padding: 10px; 
@@ -28,9 +28,7 @@
 <body>
 
 <div id="setup-screen">
-    <h1 style="font-size:18px; margin-bottom:10px;">端末名を入力してください</h1>
-    <input type="text" id="device-name" placeholder="例：iPhone 16 Pro, Pixel 8" maxlength="50">
-    <h2 style="font-size:16px; margin-bottom:20px;">操作モードを選択</h2>
+    <input type="text" id="device-name" placeholder="例：iPhone 13 mini" maxlength="50">
     <button class="setup-btn" onclick="checkStart('Right')">右手操作モード</button>
     <button class="setup-btn" onclick="checkStart('Left')">左手操作モード</button>
     <button class="setup-btn" onclick="checkStart('Both')">両手操作モード</button>
@@ -43,29 +41,20 @@
 </div>
 
 <div id="box"><div id="target">----</div><div id="display"></div></div>
-
 <div class="kb-container" id="kb-area">
     <div class="row" id="row1"></div><div class="row" id="row2"></div><div class="row" id="row3"></div>
 </div>
 
 <div id="final-area">
-    <h2 style="color: #333;">テスト終了</h2>
-    <div style="text-align: center; font-size: 15px; line-height: 1.6; color: #444; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #eee;">
-        ご協力ありがとうございました。<br>
-        端末情報と打鍵データが正常に記録されました。<br><br>
-        保存ボタンを押し、ファイルを提出してください。
-    </div>
+    <h2>テスト終了</h2>
     <button id="save-btn" onclick="saveData()">CSVを保存して提出</button>
 </div>
 
 <script>
     const masterWords = ["KAZOKU", "SANPO", "GENKI", "MUSUME", "MUSUKO", "SMILE", "KIBOU", "MEIRU", "YOTEI", "OCHA", "KUSURI", "OUEN", "SUSHI", "DENWA", "SAKURA"];
     const keys = [["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L"],["Z","X","C","V","B","N","M"]];
-    const EDGE_KEYS = ["Q", "W", "A", "S", "Z", "X", "O", "P", "K", "L", "N", "M"]; // Snap v5: 強化対象キー
-    let log = "";
-    let wordIdx = 0, lastKeyTime = 0, handStyle = "", deviceNameInput = "";
-
-    const screenInfo = `Device,${window.navigator.userAgent.replace(/,/g, ' ')}\nWidth,${window.screen.width}\nHeight,${window.screen.height}\nRatio,${window.devicePixelRatio}\n\n`;
+    const EDGE_KEYS = ["Q", "W", "A", "S", "Z", "X", "O", "P", "K", "L", "N", "M"];
+    let log = "", wordIdx = 0, lastKeyTime = 0, handStyle = "", deviceNameInput = "";
 
     keys.forEach((row, i) => {
         const rowEl = document.getElementById('row' + (i+1));
@@ -77,31 +66,23 @@
     });
 
     function checkStart(style) {
-        deviceNameInput = document.getElementById('device-name').value.trim();
-        if (!deviceNameInput) {
-            alert("端末名（機種名）を入力してください。");
-            return;
-        }
+        deviceNameInput = document.getElementById('device-name').value.trim() || "Unknown";
         startTest(style);
     }
 
     function startTest(style) {
         handStyle = style;
-        log = screenInfo + `InputDevice,${deviceNameInput}\n\nNo,TargetWord,KeyPressed,TouchX,TouchY,Interval_MS,Adjusted,Status,HandStyle,LogicMode,Timestamp\n`;
+        log = `Device,${navigator.userAgent}\nInputDevice,${deviceNameInput}\n\nNo,TargetWord,KeyPressed,TouchX,TouchY,Interval_MS,Adjusted,Status,HandStyle,LogicMode,Timestamp\n`;
         document.getElementById('setup-screen').style.display = 'none';
-        document.getElementById('hand-mode-display').innerText = "操作手: " + style;
         updateUI();
     }
 
     function updateUI() {
         const isChameleon = (wordIdx % 2 !== 0);
-        const logicEl = document.getElementById('logic-display');
-        logicEl.innerText = isChameleon ? "モード: アダプティブ" : "モード: スタンダード";
-        logicEl.className = isChameleon ? "mode-chameleon" : "mode-normal";
+        document.getElementById('logic-display').innerText = isChameleon ? "モード: アダプティブ" : "モード: スタンダード";
         document.getElementById('progress').innerText = (wordIdx + 1) + " / " + masterWords.length;
         document.getElementById('target').innerText = masterWords[wordIdx];
         document.getElementById('display').innerText = "";
-        lastKeyTime = 0;
     }
 
     document.addEventListener('touchstart', function(e) {
@@ -109,7 +90,6 @@
         const touch = e.touches[0];
         const rect = document.getElementById('kb-area').getBoundingClientRect();
         if (touch.clientY < rect.top || touch.clientY > rect.bottom) return;
-        if (e.touches.length > 1) e.preventDefault();
         processTap(touch.clientX, touch.clientY, touch.clientX - rect.left, touch.clientY - rect.top);
     }, { passive: false });
 
@@ -118,52 +98,32 @@
         const currentTargetWord = masterWords[wordIdx];
         const currentProgress = document.getElementById('display').innerText.length;
         const targetChar = currentTargetWord[currentProgress];
-
-        const now = Date.now();
-        const interval = lastKeyTime === 0 ? 0 : now - lastKeyTime;
+        const now = Date.now(), interval = lastKeyTime === 0 ? 0 : now - lastKeyTime;
         lastKeyTime = now;
 
-        let finalKey = "";
-        let adjusted = "NO";
-        let status = "MISS";
-
+        let finalKey = "", adjusted = "NO", status = "MISS";
         const targetEl = document.getElementById('key-' + targetChar);
         const targetRect = targetEl.getBoundingClientRect();
         const isInsideTarget = (globalX >= targetRect.left && globalX <= targetRect.right && globalY >= targetRect.top && globalY <= targetRect.bottom);
 
         if (isInsideTarget) {
-            finalKey = targetChar;
-            status = "SUCCESS";
-            adjusted = "NO";
+            finalKey = targetChar; status = "SUCCESS";
         } else if (isChameleon) {
             let minDist = Infinity;
-            let nearestKey = "";
             keys.flat().forEach(k => {
                 const el = document.getElementById('key-' + k);
                 const r = el.getBoundingClientRect();
-                const centerX = r.left + r.width / 2;
-                const centerY = r.top + r.height / 2;
-                const rawDist = Math.sqrt(Math.pow(globalX - centerX, 2) + Math.pow(globalY - centerY, 2));
+                const rawDist = Math.sqrt(Math.pow(globalX - (r.left + r.width/2), 2) + Math.pow(globalY - (r.top + r.height/2), 2));
                 
-                // Snap v5: 左右端のキーへの吸着補正（擬似的な距離短縮）
-                let weight = EDGE_KEYS.includes(k) ? 1.5 : 1.0;
+                // Snap v6 logic: 全方位磁力強化
+                let weight = 1.0;
+                if (k === targetChar) weight *= 1.2; // ターゲット文字への吸着
+                if (EDGE_KEYS.includes(k)) weight *= 2.0; // 端キーは超強力に
+                
                 const dist = rawDist / weight;
-
-                if (dist < minDist) { minDist = dist; nearestKey = k; }
+                if (dist < minDist) { minDist = dist; finalKey = k; }
             });
-
-            if (nearestKey === targetChar) {
-                finalKey = targetChar;
-                status = "SUCCESS";
-                adjusted = "YES";
-            } else {
-                finalKey = nearestKey;
-                status = "MISS"; 
-                adjusted = "NO";
-            }
-        } else {
-            status = "MISS";
-            adjusted = "NO";
+            if (finalKey === targetChar) { status = "SUCCESS"; adjusted = "YES"; }
         }
 
         log += `${wordIdx+1},${currentTargetWord},${finalKey || 'NONE'},${localX.toFixed(1)},${localY.toFixed(1)},${interval},${adjusted},${status},${handStyle},${isChameleon ? 'Chameleon' : 'Normal'},${now}\n`;
@@ -179,19 +139,14 @@
 
     function finish() {
         document.getElementById('kb-area').style.display = 'none';
-        document.getElementById('box').style.display = 'none';
-        document.getElementById('status-bar').style.display = 'none';
         document.getElementById('final-area').style.display = 'block';
-        document.body.style.overflow = 'auto'; document.body.style.touchAction = 'auto';
     }
 
     function saveData() {
         const blob = new Blob([log], {type: 'text/csv'});
-        const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = url;
-        const timeLabel = new Date().getTime();
-        a.download = `survey_log_${deviceNameInput}_${timeLabel}.csv`;
+        a.href = window.URL.createObjectURL(blob);
+        a.download = `survey_v6_${deviceNameInput}_${Date.now()}.csv`;
         a.click();
     }
 </script>
